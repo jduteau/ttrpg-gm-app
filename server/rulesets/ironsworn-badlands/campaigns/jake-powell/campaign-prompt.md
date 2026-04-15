@@ -1,4 +1,4 @@
-# Jake Powell's Journey Campaign
+# Jake Powell's Journey
 
 ## Campaign Overview
 
