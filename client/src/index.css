@@ -1,27 +1,49 @@
 :root {
-  --bg-void: #0a0908;
-  --bg-deep: #111010;
-  --bg-surface: #1a1917;
-  --bg-raised: #222120;
-  --bg-hover: #2a2927;
+  --bg-void: #e8dcc0;
+  --bg-deep: #decda9;
+  --bg-surface: #f2e7c9;
+  --bg-raised: #f8efd8;
+  --bg-hover: #eadcbf;
+  --bg-wash: rgba(255, 250, 235, 0.4);
+  --bg-wash-strong: rgba(255, 251, 240, 0.28);
+  --bg-panel-tint: rgba(255, 251, 242, 0.55);
+  --bg-panel-tint-strong: rgba(255, 251, 242, 0.7);
+  --bg-campaign-tint: rgba(255, 249, 237, 0.85);
+  --bg-header: color-mix(in srgb, var(--bg-deep) 86%, white 14%);
+  --bg-body-top: #efe3c5;
+  --bg-body-glow: rgba(255, 248, 228, 0.9);
+  --bg-body-glow-edge: rgba(255, 248, 228, 0);
 
-  --border-dim: #2e2c2a;
-  --border-mid: #3d3b38;
-  --border-bright: #5a5650;
+  --border-dim: #c7b38c;
+  --border-mid: #a58b63;
+  --border-bright: #7c6644;
+  --border-grid-strong: rgba(124, 102, 68, 0.08);
+  --border-grid-soft: rgba(124, 102, 68, 0.04);
 
-  --text-primary: #e8e0d5;
-  --text-secondary: #a09890;
-  --text-muted: #6a6460;
-  --text-dim: #3d3b38;
+  --text-primary: #342818;
+  --text-secondary: #5a472d;
+  --text-muted: #7b6749;
+  --text-dim: #9b896c;
 
-  --accent-gold: #c9a84c;
-  --accent-gold-dim: #7a6530;
-  --accent-gold-glow: rgba(201, 168, 76, 0.15);
+  --accent-gold: #8f6330;
+  --accent-gold-dim: #6f4d24;
+  --accent-gold-glow: rgba(143, 99, 48, 0.14);
+  --accent-gold-soft: rgba(143, 99, 48, 0.08);
+  --accent-gold-faint: rgba(143, 99, 48, 0.05);
+  --accent-arbiter: #5e7480;
+  --accent-arbiter-soft: rgba(94, 116, 128, 0.1);
+  --accent-danger: #9a5641;
+  --accent-danger-soft: rgba(154, 86, 65, 0.1);
+  --overlay-veil: rgba(93, 70, 36, 0.26);
+  --shadow-soft: 0 18px 40px rgba(90, 71, 45, 0.22);
+  --shadow-gold-soft: 0 6px 18px rgba(111, 77, 36, 0.12);
+  --shadow-gold-tight: 0 6px 14px rgba(111, 77, 36, 0.12);
+  --shadow-icon: drop-shadow(0 3px 10px rgba(124, 102, 68, 0.2));
 
-  --campaign-ose: #c0392b;
-  --campaign-masks: #8e44ad;
-  --campaign-dragonbane: #16a085;
-  --campaign-ironsworn: #d35400;
+  --campaign-ose: #9b4b37;
+  --campaign-masks: #7b5a7a;
+  --campaign-dragonbane: #3f7a67;
+  --campaign-ironsworn: #9a6131;
 
   --font-display: 'Cinzel', Georgia, serif;
   --font-body: 'Crimson Pro', Georgia, serif;
@@ -43,12 +65,15 @@ html, body, #root {
 }
 
 body {
-  background: var(--bg-void);
+  background:
+    radial-gradient(circle at top, var(--bg-body-glow) 0%, var(--bg-body-glow-edge) 42%),
+    linear-gradient(180deg, var(--bg-body-top) 0%, var(--bg-void) 100%);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  background-attachment: fixed;
 }
 
 /* Scrollbar */

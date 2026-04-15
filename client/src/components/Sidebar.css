@@ -1,7 +1,9 @@
 .sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
-  background: var(--bg-deep);
+  background:
+    linear-gradient(180deg, var(--bg-wash), transparent),
+    var(--bg-deep);
   border-right: 1px solid var(--border-dim);
   display: flex;
   flex-direction: column;
@@ -161,15 +163,15 @@
 }
 
 .session-delete:hover {
-  color: #c0392b;
-  background: rgba(192, 57, 43, 0.1);
+  color: var(--accent-danger);
+  background: var(--accent-danger-soft);
 }
 
 /* Active context panel */
 .sidebar-context {
   padding: 10px 14px 12px;
   border-bottom: 1px solid var(--border-dim);
-  background: color-mix(in srgb, var(--campaign-color) 5%, transparent);
+  background: color-mix(in srgb, var(--campaign-color) 7%, var(--bg-campaign-tint));
 }
 
 .sidebar-section-label {

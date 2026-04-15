@@ -264,7 +264,7 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `server/ru
 - `scanRulesets()` — reads each subdirectory of `server/rulesets/`, extracts the name from the first markdown header in `system-prompt.md`
 - `scanCampaigns()` — for each ruleset, reads each subdirectory of `campaigns/`, extracts name from `campaign-prompt.md`
 - Results are cached in `_rulesetsCache` / `_campaignsCache` for the lifetime of the server process
-- `RULESET_DEFAULTS` provides icon/color overrides for known ruleset IDs; unknown rulesets fall back to `🎲` / `#34495e`
+- `RULESET_DEFAULTS` provides icon/color overrides for known ruleset IDs; unknown rulesets fall back to `🎲` / `#6e7560`
 
 ### Adding a new campaign to an existing ruleset
 
@@ -287,16 +287,21 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `server/ru
 - **Campaign colour** passed as `--campaign-color` prop via inline style on container elements
 - **No component library** — all styling is hand-written CSS in co-located `.css` files
 - **Font stack**: `--font-display` (Cinzel) for headings/labels, `--font-body` (Crimson Pro) for prose
-- **Dark theme only** — backgrounds use `--bg-void` / `--bg-deep` / `--bg-surface` / `--bg-raised`
+- **Parchment theme** — backgrounds use `--bg-void` / `--bg-deep` / `--bg-surface` / `--bg-raised` for warm paper surfaces rather than dark panels
 - **Animations**: `fadeUp` keyframe used for message/block entry; `blink` for streaming cursor
 
 ### Key CSS variables
 
 ```css
 --bg-void, --bg-deep, --bg-surface, --bg-raised, --bg-hover
+--bg-wash, --bg-wash-strong, --bg-panel-tint, --bg-panel-tint-strong, --bg-campaign-tint, --bg-header
 --border-dim, --border-mid, --border-bright
+--border-grid-strong, --border-grid-soft
 --text-primary, --text-secondary, --text-muted, --text-dim
 --accent-gold, --accent-gold-dim, --accent-gold-glow
+--accent-gold-soft, --accent-gold-faint
+--accent-arbiter, --accent-arbiter-soft, --accent-danger, --accent-danger-soft
+--overlay-veil, --shadow-soft, --shadow-gold-soft, --shadow-gold-tight, --shadow-icon
 --font-display, --font-body
 --sidebar-width: 260px
 --transition: 0.18s ease
@@ -352,5 +357,7 @@ node import-sessions.js --list
 - **File cascade loading**: The system first checks campaign-specific folders, then falls back to ruleset-level shared folders for modules and references.
 - **Legacy API compatibility**: `/api/campaigns` endpoint maintains backward compatibility by converting the new structure to the old flat format for the frontend.
 - **Campaign color theming**: pass `style={{ '--campaign-color': ruleset.color }}` on a container, then use `var(--campaign-color)` in CSS. Colors come from the ruleset, not individual campaigns.
+- **Accent palette**: prefer muted, ink-friendly campaign accents that still contrast on parchment backgrounds; avoid neon or overly saturated hues in `RULESET_DEFAULTS` and CSS vars.
+- **Theme tokens first**: when adjusting the parchment UI, prefer adding or reusing semantic CSS variables in `client/src/index.css` rather than scattering literal `rgba(...)`, shadows, or parchment tint values across component styles.
 - **File label formatting**: `labelFromFilename()` strips leading `01-` numeric prefixes and converts hyphens/underscores to title case. Campaign vs shared files are distinguished by `[Campaign]` and `[Shared]` prefixes.
 - **Dynamic discovery caching**: `scanRulesets()` and `scanCampaigns()` cache results in module-level variables — the file system is only scanned once per server process. Use `getRuleset(id)` and `getCampaign(id)` helpers throughout the server code.

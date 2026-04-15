@@ -2,6 +2,8 @@
 
 A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns, streaming chat, a built-in dice roller, a rules arbiter, and session state management.
 
+The UI uses a parchment palette with shared theme tokens for campaign accents, arbiter highlights, destructive actions, overlays, shadows, and surface washes so the client stays visually consistent across screens and dialogs. Theme retuning should happen in `client/src/index.css` rather than by editing literal colors in individual component styles.
+
 ---
 
 ## Setup
@@ -86,7 +88,8 @@ ttrpg-gm-app/
 1. Create `server/rulesets/{rulesetId}/system-prompt.md` (first line: `# Ruleset Name`)
 2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, `modules/`, `references/`
 3. Create at least one campaign under `campaigns/`
-4. Optionally add an icon/color entry to `RULESET_DEFAULTS` in `server/index.js`
+4. Optionally add an icon/color entry to `RULESET_DEFAULTS` in `server/index.js`.
+	Choose a muted accent that stays readable against the parchment UI theme rather than a highly saturated dark-theme color.
 5. Restart the server
 
 ---

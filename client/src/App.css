@@ -3,7 +3,9 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: var(--bg-void);
+  background:
+    linear-gradient(180deg, var(--bg-wash), transparent),
+    var(--bg-void);
 }
 
 .app-main {
@@ -21,7 +23,7 @@
   justify-content: center;
   background: var(--bg-void);
   background-image:
-    radial-gradient(ellipse at 50% 50%, rgba(201, 168, 76, 0.04) 0%, transparent 70%);
+    radial-gradient(ellipse at 50% 50%, var(--accent-gold-soft) 0%, transparent 70%);
 }
 
 .empty-state-inner {
@@ -37,7 +39,7 @@
   font-size: 56px;
   display: block;
   margin-bottom: 8px;
-  filter: drop-shadow(0 0 20px rgba(201, 168, 76, 0.3));
+  filter: var(--shadow-icon);
 }
 
 .empty-state-inner h2 {
@@ -73,7 +75,7 @@
 .btn-primary:hover {
   background: var(--accent-gold-glow);
   border-color: var(--accent-gold);
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  box-shadow: var(--shadow-gold-soft);
 }
 
 @keyframes fadeUp {

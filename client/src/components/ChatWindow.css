@@ -4,7 +4,8 @@
   height: 100vh;
   background: var(--bg-void);
   background-image:
-    radial-gradient(ellipse at 60% 0%, rgba(201, 168, 76, 0.03) 0%, transparent 50%);
+    radial-gradient(ellipse at 60% 0%, var(--accent-gold-soft) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-wash-strong), transparent 55%);
 }
 
 /* Header */
@@ -14,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-deep);
+  background: var(--bg-header);
   flex-shrink: 0;
 }
 
@@ -148,7 +149,7 @@
   flex-shrink: 0;
   padding: 14px 32px 20px;
   border-top: 1px solid var(--border-dim);
-  background: var(--bg-deep);
+  background: var(--bg-header);
 }
 
 .input-area {
@@ -206,7 +207,7 @@
 .send-btn:hover:not(:disabled) {
   background: var(--accent-gold-glow);
   border-color: var(--accent-gold);
-  box-shadow: 0 0 12px rgba(201, 168, 76, 0.15);
+  box-shadow: var(--shadow-gold-tight);
 }
 
 .send-btn:disabled {
@@ -223,7 +224,7 @@
 .message-archive {
   border: 1px solid var(--border-dim);
   border-left: 3px solid var(--accent-gold-dim);
-  background: rgba(201, 168, 76, 0.03);
+  background: var(--accent-gold-faint);
   border-radius: 2px;
   padding: 20px 24px;
   margin: 8px 0;
@@ -274,9 +275,9 @@
 /* ── Rules Arbiter blocks ──────────────────────────────────────────────────── */
 .arbiter-block {
   border: 1px solid var(--border-dim);
-  border-left: 3px solid #4a7fa5;
+  border-left: 3px solid var(--accent-arbiter);
   border-radius: 2px;
-  background: rgba(74, 127, 165, 0.04);
+  background: var(--accent-arbiter-soft);
   padding: 0 32px;
   max-width: 880px;
   width: 100%;
@@ -307,7 +308,7 @@
 
 .arbiter-icon {
   font-size: 0.85rem;
-  color: #4a7fa5;
+  color: var(--accent-arbiter);
   flex-shrink: 0;
 }
 
@@ -316,7 +317,7 @@
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #4a7fa5;
+  color: var(--accent-arbiter);
   flex-shrink: 0;
 }
 
@@ -340,7 +341,7 @@
 .arbiter-spinner {
   width: 12px;
   height: 12px;
-  border: 1px solid #4a7fa5;
+  border: 1px solid var(--accent-arbiter);
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -378,7 +379,7 @@
 }
 
 .arbiter-q-label { color: var(--text-muted); }
-.arbiter-a-label { color: #4a7fa5; }
+.arbiter-a-label { color: var(--accent-arbiter); }
 
 .arbiter-q { color: var(--text-secondary); font-style: italic; }
 .arbiter-a { color: var(--text-primary); white-space: pre-wrap; }
@@ -395,7 +396,7 @@
   margin: 0 auto;
   animation: fadeUp 0.2s ease both;
   border-left: 3px solid var(--accent-gold-dim);
-  background: rgba(212, 175, 55, 0.04);
+  background: var(--accent-gold-glow);
 }
 
 .dice-roll-label {
@@ -424,7 +425,7 @@
   border: 1px solid var(--border-dim);
   border-left: 3px solid var(--accent-gold-dim);
   border-radius: 2px;
-  background: rgba(201, 168, 76, 0.04);
+  background: var(--accent-gold-glow);
   padding: 0 32px;
   max-width: 880px;
   width: 100%;
@@ -491,9 +492,9 @@
 }
 
 .btn-end-session:hover:not(:disabled) {
-  border-color: #c0392b;
-  color: #c0392b;
-  background: rgba(192, 57, 43, 0.08);
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+  background: var(--accent-danger-soft);
 }
 
 .btn-end-session:disabled { opacity: 0.3; cursor: default; }
@@ -526,25 +527,25 @@
 .end-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: var(--overlay-veil);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 200;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
   animation: fadeIn 0.15s ease;
 }
 
 .end-dialog {
   background: var(--bg-surface);
   border: 1px solid var(--border-mid);
-  border-top: 2px solid #c0392b;
+  border-top: 2px solid var(--accent-danger);
   border-radius: 3px;
   width: 400px;
   max-width: 90vw;
   padding: 24px;
   animation: slideUp 0.2s ease;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  box-shadow: var(--shadow-soft);
 }
 
 .end-dialog-title {
@@ -575,13 +576,13 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 8px 18px;
-  border: 1px solid rgba(192, 57, 43, 0.5);
+  border: 1px solid color-mix(in srgb, var(--accent-danger) 50%, transparent);
   border-radius: 2px;
-  color: #c0392b;
+  color: var(--accent-danger);
   transition: all var(--transition);
 }
 
 .btn-end-confirm:hover {
-  background: rgba(192, 57, 43, 0.1);
-  border-color: #c0392b;
+  background: var(--accent-danger-soft);
+  border-color: var(--accent-danger);
 }

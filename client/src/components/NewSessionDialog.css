@@ -1,13 +1,13 @@
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--overlay-veil);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
   animation: fadeIn 0.15s ease;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(3px);
 }
 
 .dialog {
@@ -21,7 +21,7 @@
   display: flex;
   flex-direction: column;
   animation: slideUp 0.2s ease;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-soft);
 }
 
 .dialog-header {
@@ -84,7 +84,7 @@
 
 .field input {
   width: 100%;
-  background: var(--bg-deep);
+  background: var(--bg-panel-tint);
   border: 1px solid var(--border-dim);
   border-radius: 2px;
   padding: 9px 12px;
@@ -195,7 +195,7 @@
   font-family: monospace;
   font-size: 0.8rem;
   color: var(--text-secondary);
-  background: var(--bg-raised);
+  background: var(--bg-panel-tint-strong);
   padding: 1px 4px;
   border-radius: 2px;
 }

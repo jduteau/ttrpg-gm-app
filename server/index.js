@@ -148,10 +148,10 @@ function trimEndedSessionMessages(sessionId = null) {
 
 // Default visual attributes for rulesets
 const RULESET_DEFAULTS = {
-  'ose': { icon: '⚔️', color: '#c0392b' },
-  'masks': { icon: '🦸', color: '#8e44ad' },
-  'dragonbane': { icon: '🐉', color: '#16a085' },
-  'ironsworn-badlands': { icon: '🤠', color: '#d35400' },
+  'ose': { icon: '⚔️', color: '#9b4b37' },
+  'masks': { icon: '🦸', color: '#7b5a7a' },
+  'dragonbane': { icon: '🐉', color: '#3f7a67' },
+  'ironsworn-badlands': { icon: '🤠', color: '#9a6131' },
   // Add more defaults here as needed
 };
 
@@ -215,7 +215,7 @@ function scanRulesets() {
       }
       
       // Get visual attributes from defaults or generate fallbacks
-      const defaults = RULESET_DEFAULTS[rulesetId] || { icon: '🎲', color: '#34495e' };
+      const defaults = RULESET_DEFAULTS[rulesetId] || { icon: '🎲', color: '#6e7560' };
       
       rulesets[rulesetId] = {
         id: rulesetId,
