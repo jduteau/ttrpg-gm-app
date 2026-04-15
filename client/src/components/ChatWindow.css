@@ -270,3 +270,115 @@
   font-size: 0.97rem;
   line-height: 1.85;
 }
+
+/* ── Rules Arbiter blocks ──────────────────────────────────────────────────── */
+.arbiter-block {
+  border: 1px solid var(--border-dim);
+  border-left: 3px solid #4a7fa5;
+  border-radius: 2px;
+  background: rgba(74, 127, 165, 0.04);
+  padding: 0 32px;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeUp 0.25s ease both;
+}
+
+.arbiter-block.pending {
+  opacity: 0.7;
+}
+
+.arbiter-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: inherit;
+}
+
+.arbiter-block.pending .arbiter-header {
+  cursor: default;
+}
+
+.arbiter-icon {
+  font-size: 0.85rem;
+  color: #4a7fa5;
+  flex-shrink: 0;
+}
+
+.arbiter-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4a7fa5;
+  flex-shrink: 0;
+}
+
+.arbiter-question-preview {
+  flex: 1;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.arbiter-chevron {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.arbiter-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #4a7fa5;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.arbiter-body {
+  padding: 4px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border-dim);
+}
+
+.arbiter-q,
+.arbiter-a {
+  display: flex;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.arbiter-q-label,
+.arbiter-a-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+  margin-top: 3px;
+  width: 14px;
+}
+
+.arbiter-q-label { color: var(--text-muted); }
+.arbiter-a-label { color: #4a7fa5; }
+
+.arbiter-q { color: var(--text-secondary); font-style: italic; }
+.arbiter-a { color: var(--text-primary); white-space: pre-wrap; }

@@ -1,33 +1,138 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './ChatWindow.css';
 
+// ── Arbiter block (collapsed by default) ─────────────────────────────────────
+function ArbiterBlock({ question, ruling }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`arbiter-block ${open ? 'open' : ''}`}>
+      <button className="arbiter-header" onClick={() => setOpen(o => !o)}>
+        <span className="arbiter-icon">⚖</span>
+        <span className="arbiter-label">Rules Arbiter</span>
+        <span className="arbiter-question-preview">{question}</span>
+        <span className="arbiter-chevron">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="arbiter-body">
+          <div className="arbiter-q"><span className="arbiter-q-label">Q</span>{question}</div>
+          <div className="arbiter-a"><span className="arbiter-a-label">A</span>{ruling}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Pending arbiter (waiting for ruling) ──────────────────────────────────────
+function ArbiterPending({ question }) {
+  return (
+    <div className="arbiter-block pending">
+      <div className="arbiter-header">
+        <span className="arbiter-icon">⚖</span>
+        <span className="arbiter-label">Rules Arbiter</span>
+        <span className="arbiter-question-preview">{question}</span>
+        <span className="arbiter-spinner" />
+      </div>
+    </div>
+  );
+}
+
+// ── Message renderer ──────────────────────────────────────────────────────────
+function Message({ msg }) {
+  if (msg.role === 'archive') {
+    return (
+      <div className="message message-archive">
+        <div className="message-archive-header">
+          <span className="archive-rule" />
+          <span className="archive-label">📜 Session Archive</span>
+          <span className="archive-rule" />
+        </div>
+        <div className="message-content">{msg.content}</div>
+        <div className="message-archive-footer">
+          <span className="archive-rule" />
+          <span className="archive-label-end">— End of Archive —</span>
+          <span className="archive-rule" />
+        </div>
+      </div>
+    );
+  }
+
+  if (msg.role === 'arbiter') {
+    return <ArbiterBlock question={msg.question} ruling={msg.ruling} />;
+  }
+
+  if (msg.role === 'tool_use' || msg.role === 'tool_result') {
+    return null; // rendered as arbiter blocks instead
+  }
+
+  return (
+    <div className={`message message-${msg.role}`}>
+      <div className="message-label">{msg.role === 'user' ? 'You' : 'GM'}</div>
+      <div className="message-content">{msg.content}</div>
+    </div>
+  );
+}
+
+// ── Merge tool_use + tool_result pairs into arbiter blocks ────────────────────
+function mergeMessages(raw) {
+  const result = [];
+  const toolUseMap = {};
+
+  for (const m of raw) {
+    if (m.role === 'tool_use') {
+      try {
+        const d = typeof m.content === 'string' ? JSON.parse(m.content) : m.content;
+        toolUseMap[d.tool_use_id] = { id: m.id, question: d.question };
+      } catch {}
+    } else if (m.role === 'tool_result') {
+      try {
+        const d = typeof m.content === 'string' ? JSON.parse(m.content) : m.content;
+        const use = toolUseMap[d.tool_use_id];
+        if (use) {
+          result.push({ id: `arbiter-${use.id}`, role: 'arbiter', question: use.question, ruling: d.result });
+        }
+      } catch {}
+    } else {
+      result.push(m);
+    }
+  }
+  return result;
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function ChatWindow({ session, campaign }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [streaming, setStreaming] = useState(false);
+  const [messages,     setMessages]     = useState([]);
+  const [input,        setInput]        = useState('');
+  const [streaming,    setStreaming]     = useState(false);
   const [streamBuffer, setStreamBuffer] = useState('');
-  const bottomRef = useRef(null);
+  const [pendingArbiter, setPendingArbiter] = useState(null);
+  const [arbiterBlocks,  setArbiterBlocks]  = useState([]); // [{question, ruling}] during stream
+  const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
     fetch(`/api/sessions/${session.id}/messages`)
       .then(r => r.json())
-      .then(setMessages);
+      .then(raw => setMessages(mergeMessages(raw)));
     setStreamBuffer('');
     setStreaming(false);
+    setPendingArbiter(null);
+    setArbiterBlocks([]);
   }, [session.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamBuffer]);
+  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks]);
 
   const send = async () => {
     if (!input.trim() || streaming) return;
     const text = input.trim();
     setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setMessages(m => [...m, { role: 'user', content: text, id: Date.now() }]);
     setStreaming(true);
     setStreamBuffer('');
+    setPendingArbiter(null);
+    setArbiterBlocks([]);
 
     try {
       const res = await fetch(`/api/sessions/${session.id}/chat`, {
@@ -36,31 +141,55 @@ export default function ChatWindow({ session, campaign }) {
         body: JSON.stringify({ message: text }),
       });
 
-      const reader = res.body.getReader();
+      const reader  = res.body.getReader();
       const decoder = new TextDecoder();
-      let buffer = '';
+      let textBuffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        const lines = decoder.decode(value).split('\n');
+
         for (const line of lines) {
           if (!line.startsWith('data: ')) continue;
           try {
             const data = JSON.parse(line.slice(6));
+
             if (data.text) {
-              buffer += data.text;
-              setStreamBuffer(b => b + data.text);
+              textBuffer += data.text;
+              setStreamBuffer(textBuffer);
             }
+
+            if (data.arbiter_start) {
+              // Flush current text buffer as a message, start arbiter pending
+              if (textBuffer.trim()) {
+                setMessages(m => [...m, { role: 'assistant', content: textBuffer, id: Date.now() }]);
+                textBuffer = '';
+                setStreamBuffer('');
+              }
+              setPendingArbiter(data.question);
+            }
+
+            if (data.arbiter_done) {
+              setPendingArbiter(null);
+              setArbiterBlocks(bs => [...bs, { question: data.question, ruling: data.ruling }]);
+            }
+
             if (data.done) {
-              setMessages(m => [...m, { role: 'assistant', content: buffer, id: Date.now() }]);
+              if (textBuffer.trim()) {
+                setMessages(m => [...m, { role: 'assistant', content: textBuffer, id: Date.now() }]);
+              }
+              // Reload full message list to get persisted arbiter blocks
+              const fresh = await fetch(`/api/sessions/${session.id}/messages`).then(r => r.json());
+              setMessages(mergeMessages(fresh));
               setStreamBuffer('');
+              setArbiterBlocks([]);
+              setPendingArbiter(null);
               setStreaming(false);
             }
+
             if (data.error) {
               setMessages(m => [...m, { role: 'assistant', content: `[Error: ${data.error}]`, id: Date.now() }]);
-              setStreamBuffer('');
               setStreaming(false);
             }
           } catch {}
@@ -68,19 +197,14 @@ export default function ChatWindow({ session, campaign }) {
       }
     } catch (err) {
       setMessages(m => [...m, { role: 'assistant', content: `[Connection error: ${err.message}]`, id: Date.now() }]);
-      setStreamBuffer('');
       setStreaming(false);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  // Auto-resize textarea
   const handleInput = (e) => {
     setInput(e.target.value);
     e.target.style.height = 'auto';
@@ -102,47 +226,28 @@ export default function ChatWindow({ session, campaign }) {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          msg.role === 'archive' ? (
-            <div key={msg.id ?? i} className="message message-archive">
-              <div className="message-archive-header">
-                <span className="archive-rule" />
-                <span className="archive-label">📜 Session Archive</span>
-                <span className="archive-rule" />
-              </div>
-              <div className="message-content">{msg.content}</div>
-              <div className="message-archive-footer">
-                <span className="archive-rule" />
-                <span className="archive-label-end">— End of Archive —</span>
-                <span className="archive-rule" />
-              </div>
-            </div>
-          ) : (
-            <div key={msg.id ?? i} className={`message message-${msg.role}`}>
-              <div className="message-label">
-                {msg.role === 'user' ? 'You' : 'GM'}
-              </div>
-              <div className="message-content">{msg.content}</div>
-            </div>
-          )
+        {messages.map((msg, i) => <Message key={msg.id ?? i} msg={msg} />)}
+
+        {/* Live arbiter blocks during streaming */}
+        {arbiterBlocks.map((b, i) => (
+          <ArbiterBlock key={`live-arbiter-${i}`} question={b.question} ruling={b.ruling} />
         ))}
 
+        {/* Pending arbiter */}
+        {pendingArbiter && <ArbiterPending question={pendingArbiter} />}
+
+        {/* Streaming GM text */}
         {streaming && streamBuffer && (
           <div className="message message-assistant streaming">
             <div className="message-label">GM</div>
-            <div className="message-content">
-              {streamBuffer}
-              <span className="cursor" />
-            </div>
+            <div className="message-content">{streamBuffer}<span className="cursor" /></div>
           </div>
         )}
 
-        {streaming && !streamBuffer && (
+        {streaming && !streamBuffer && !pendingArbiter && (
           <div className="message message-assistant">
             <div className="message-label">GM</div>
-            <div className="message-content thinking">
-              <span /><span /><span />
-            </div>
+            <div className="message-content thinking"><span /><span /><span /></div>
           </div>
         )}
 
@@ -160,12 +265,7 @@ export default function ChatWindow({ session, campaign }) {
             rows={2}
             disabled={streaming}
           />
-          <button
-            className="send-btn"
-            onClick={send}
-            disabled={streaming || !input.trim()}
-            title="Send (Enter)"
-          >
+          <button className="send-btn" onClick={send} disabled={streaming || !input.trim()}>
             {streaming ? '…' : '→'}
           </button>
         </div>

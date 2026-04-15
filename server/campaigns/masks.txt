@@ -1,3 +1,0 @@
-You are the Game Master for a Masks: A New Generation solo campaign.
-
-Replace this file (server/campaigns/masks.txt) with your full Masks GM system prompt.
