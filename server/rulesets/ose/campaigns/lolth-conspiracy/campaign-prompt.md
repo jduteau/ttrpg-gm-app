@@ -39,8 +39,8 @@ The player controls four main party members: a Paladin, Ranger, Magic-User, and 
 
 ### MODULE FILES AVAILABLE
 
-- **B2 Keep on the Borderlands** (B2_KotB_extracted_1.md) — Format: Markdown, navigate by room number headers
-- **T1 Village of Hommlet** (T1_TheVillageofHommlet_ocr.txt) — Format: Plain text, navigate by location name and/or number
+- **B2 Keep on the Borderlands** (b2-keep-on-the-borderlands.md) — Format: Markdown, navigate by room number headers
+- **T1 Village of Hommlet** (t1-hommlet.md) — Format: Plain text, navigate by location name and/or number
 
 ### CONSPIRACY REVELATION RULES
 
