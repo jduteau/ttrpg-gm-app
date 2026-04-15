@@ -107,21 +107,42 @@ function hasSessionState(campaignId) {
   return content.length > 0 && !content.startsWith('<!--');
 }
 
+function loadSharedFile(filename) {
+  const p = join(__dirname, filename);
+  return existsSync(p) ? readFileSync(p, 'utf-8').trim() : null;
+}
+
 function loadSystemPrompt(campaignId, contextFiles = []) {
   const parts = [];
+
+  // 1. Campaign GM system prompt
   const prompt = readCampaignFile(campaignId, 'system-prompt.md');
   parts.push(prompt ?? `You are a GM for the ${CAMPAIGNS[campaignId]?.name ?? campaignId} campaign.`);
 
-  // Inject session state first if it exists (highest priority context)
+  // 2. Shared session state instructions (how to read/write state)
+  const stateInstructions = loadSharedFile('session-state-instructions.md');
+  if (stateInstructions) parts.push(`\n\n---\n${stateInstructions}`);
+
+  // 3. Shared session state template (universal fields)
+  const stateTemplate = loadSharedFile('session-state-template.md');
+  if (stateTemplate) parts.push(`\n\n---\n${stateTemplate}`);
+
+  // 4. Campaign-specific state field extensions
+  const stateFields = readCampaignFile(campaignId, 'session-state-fields.md');
+  if (stateFields) parts.push(`\n\n---\n${stateFields}`);
+
+  // 5. Restored session state (current campaign state — highest priority)
   if (hasSessionState(campaignId)) {
     const state = readCampaignFile(campaignId, 'session-state.md');
-    parts.push(`\n\n---\n# Session State (Restored)\n\n${state}`);
+    parts.push(`\n\n---\n# Session State (Restored)\n\nThis is the current campaign state from the end of the last session. Treat it as authoritative.\n\n${state}`);
   }
 
+  // 6. Selected modules and references
   for (const filePath of contextFiles) {
     const content = readCampaignFile(campaignId, filePath);
     if (content) parts.push(`\n\n---\n# ${labelFromFilename(filePath)}\n\n${content}`);
   }
+
   return parts.join('\n\n');
 }
 
