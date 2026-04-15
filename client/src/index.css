@@ -1,0 +1,77 @@
+:root {
+  --bg-void: #0a0908;
+  --bg-deep: #111010;
+  --bg-surface: #1a1917;
+  --bg-raised: #222120;
+  --bg-hover: #2a2927;
+
+  --border-dim: #2e2c2a;
+  --border-mid: #3d3b38;
+  --border-bright: #5a5650;
+
+  --text-primary: #e8e0d5;
+  --text-secondary: #a09890;
+  --text-muted: #6a6460;
+  --text-dim: #3d3b38;
+
+  --accent-gold: #c9a84c;
+  --accent-gold-dim: #7a6530;
+  --accent-gold-glow: rgba(201, 168, 76, 0.15);
+
+  --campaign-ose: #c0392b;
+  --campaign-masks: #8e44ad;
+  --campaign-dragonbane: #16a085;
+  --campaign-ironsworn: #d35400;
+
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'Crimson Pro', Georgia, serif;
+
+  --sidebar-width: 260px;
+  --transition: 0.18s ease;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+/* Selection */
+::selection {
+  background: var(--accent-gold-glow);
+  color: var(--accent-gold);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input, textarea {
+  font-family: var(--font-body);
+  color: inherit;
+}
