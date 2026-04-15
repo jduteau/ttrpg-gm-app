@@ -130,7 +130,7 @@ const CAMPAIGNS = {
     id: 'lolth-conspiracy',
     rulesetId: 'ose',
     name: 'The Lolth Conspiracy',
-    description: 'Dark elf infiltration'
+    description: 'Old style campaign with a twist of drow intrigue'
   },
   'masks.halcyon-city': {
     id: 'halcyon-city',
@@ -138,11 +138,11 @@ const CAMPAIGNS = {
     name: 'Halcyon City Heroes',
     description: 'Superhero team adventures'
   },
-  'dragonbane.mercy-row': {
-    id: 'mercy-row',
+  'dragonbane.dragon-emperor': {
+    id: 'dragon-emperor',
     rulesetId: 'dragonbane',
-    name: 'Mercy Row',
-    description: 'Urban fantasy campaign'
+    name: 'The Secret of the Dragon Emperor',
+    description: 'A quest to uncover the truth behind the legendary Dragon Emperor'
   },
   'ironsworn-badlands.jake-powell': {
     id: 'jake-powell',
