@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import initSqlJs from 'sql.js';
@@ -53,6 +53,7 @@ db.run(`CREATE TABLE IF NOT EXISTS sessions (
   campaign_id   TEXT NOT NULL,
   title         TEXT NOT NULL,
   context_files TEXT NOT NULL DEFAULT '[]',
+  ended_at      TEXT,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 )`);
@@ -65,6 +66,7 @@ db.run(`CREATE TABLE IF NOT EXISTS messages (
   FOREIGN KEY (session_id) REFERENCES sessions(id)
 )`);
 try { db.run(`ALTER TABLE sessions ADD COLUMN context_files TEXT NOT NULL DEFAULT '[]'`); } catch {}
+try { db.run(`ALTER TABLE sessions ADD COLUMN ended_at TEXT`); } catch {}
 saveDb();
 
 // ── Campaigns ─────────────────────────────────────────────────────────────────
@@ -93,40 +95,67 @@ function listFolder(campaignId, subfolder) {
     .map(f => ({ path: `${subfolder}/${f}`, label: labelFromFilename(f) }));
 }
 
-function readFile(campaignId, relPath) {
+function readCampaignFile(campaignId, relPath) {
   const full = join(CAMPAIGNS_DIR, campaignId, relPath);
   return existsSync(full) ? readFileSync(full, 'utf-8').trim() : null;
 }
 
+function hasSessionState(campaignId) {
+  const p = join(CAMPAIGNS_DIR, campaignId, 'session-state.md');
+  if (!existsSync(p)) return false;
+  const content = readFileSync(p, 'utf-8').trim();
+  return content.length > 0 && !content.startsWith('<!--');
+}
+
 function loadSystemPrompt(campaignId, contextFiles = []) {
   const parts = [];
-  const prompt = readFile(campaignId, 'system-prompt.md');
+  const prompt = readCampaignFile(campaignId, 'system-prompt.md');
   parts.push(prompt ?? `You are a GM for the ${CAMPAIGNS[campaignId]?.name ?? campaignId} campaign.`);
+
+  // Inject session state first if it exists (highest priority context)
+  if (hasSessionState(campaignId)) {
+    const state = readCampaignFile(campaignId, 'session-state.md');
+    parts.push(`\n\n---\n# Session State (Restored)\n\n${state}`);
+  }
+
   for (const filePath of contextFiles) {
-    const content = readFile(campaignId, filePath);
+    const content = readCampaignFile(campaignId, filePath);
     if (content) parts.push(`\n\n---\n# ${labelFromFilename(filePath)}\n\n${content}`);
   }
   return parts.join('\n\n');
 }
 
 function loadArbiterPrompt(campaignId) {
-  const shared   = existsSync(join(__dirname, 'arbiter-prompt.md'))
-    ? readFileSync(join(__dirname, 'arbiter-prompt.md'), 'utf-8').trim() : '';
-  const specific = readFile(campaignId, 'rules-arbiter.md') ?? '';
+  const sharedPath = join(__dirname, 'arbiter-prompt.md');
+  const shared   = existsSync(sharedPath) ? readFileSync(sharedPath, 'utf-8').trim() : '';
+  const specific = readCampaignFile(campaignId, 'rules-arbiter.md') ?? '';
   return [shared, specific].filter(Boolean).join('\n\n---\n\n');
 }
 
-// ── Rules arbiter tool definition ─────────────────────────────────────────────
+function saveSessionState(campaignId, stateContent) {
+  const campaignPath = join(CAMPAIGNS_DIR, campaignId);
+  const statePath    = join(campaignPath, 'session-state.md');
+  const backupDir    = join(campaignPath, 'state-backups');
+  mkdirSync(backupDir, { recursive: true });
+
+  // Archive current state before overwriting
+  if (existsSync(statePath)) {
+    const date = new Date().toISOString().slice(0, 10);
+    const backupPath = join(backupDir, `session-state-${date}.md`);
+    copyFileSync(statePath, backupPath);
+  }
+
+  writeFileSync(statePath, stateContent, 'utf-8');
+}
+
+// ── Tools ─────────────────────────────────────────────────────────────────────
 const QUERY_RULES_TOOL = {
   name: 'query_rules',
   description: 'Consult the rules arbiter for an authoritative ruling on a specific game mechanic or rule. Use this whenever you need to resolve a mechanical question before narrating an outcome. Ask one focused question per call.',
   input_schema: {
     type: 'object',
     properties: {
-      question: {
-        type: 'string',
-        description: 'The specific rules question to ask. Be precise — reference the mechanic, action, or situation by name.',
-      },
+      question: { type: 'string', description: 'The specific rules question to ask.' },
     },
     required: ['question'],
   },
@@ -146,6 +175,88 @@ async function callArbiter(campaignId, question) {
   return response.content.find(b => b.type === 'text')?.text ?? '(No ruling returned)';
 }
 
+// Shared streaming chat loop — used by both /chat and /end
+async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignId, sessionId, saveAssistantMessages = true }) {
+  function send(data) { res.write(`data: ${JSON.stringify(data)}\n\n`); }
+
+  let continueLoop = true;
+  while (continueLoop) {
+    continueLoop = false;
+    let fullText = '';
+    let toolUseBlock = null;
+    let toolUseJson  = '';
+
+    const stream = anthropic.messages.stream({
+      model:      'claude-opus-4-5',
+      max_tokens: 2048,
+      system:     systemPrompt,
+      tools:      hasArbiter ? [QUERY_RULES_TOOL] : [],
+      messages:   history,
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+        toolUseBlock = { id: event.content_block.id, name: event.content_block.name };
+        toolUseJson  = '';
+      }
+      if (event.type === 'content_block_delta') {
+        if (event.delta.type === 'text_delta') {
+          fullText += event.delta.text;
+          send({ text: event.delta.text });
+        }
+        if (event.delta.type === 'input_json_delta') {
+          toolUseJson += event.delta.partial_json;
+        }
+      }
+      if (event.type === 'message_delta' && event.delta.stop_reason === 'tool_use') {
+        continueLoop = true;
+      }
+    }
+
+    if (toolUseBlock) {
+      let toolInput = {};
+      try { toolInput = JSON.parse(toolUseJson); } catch {}
+      const question = toolInput.question ?? toolUseJson;
+
+      if (fullText.trim() && saveAssistantMessages) {
+        dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+          [sessionId, 'assistant', fullText, new Date().toISOString()]);
+        history.push({ role: 'assistant', content: fullText });
+      }
+
+      send({ arbiter_start: true, question });
+      const ruling = await callArbiter(campaignId, question);
+
+      const toolUseId = toolUseBlock.id;
+      if (saveAssistantMessages) {
+        dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+          [sessionId, 'tool_use', JSON.stringify({ tool_use_id: toolUseId, question }), new Date().toISOString()]);
+        dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+          [sessionId, 'tool_result', JSON.stringify({ tool_use_id: toolUseId, result: ruling }), new Date().toISOString()]);
+      }
+
+      send({ arbiter_done: true, question, ruling });
+
+      history.push({ role: 'assistant', content: [
+        ...(fullText ? [{ type: 'text', text: fullText }] : []),
+        { type: 'tool_use', id: toolUseId, name: 'query_rules', input: { question } },
+      ]});
+      history.push({ role: 'user', content: [
+        { type: 'tool_result', tool_use_id: toolUseId, content: ruling },
+      ]});
+
+    } else if (fullText) {
+      if (saveAssistantMessages) {
+        dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+          [sessionId, 'assistant', fullText, new Date().toISOString()]);
+        dbRun('UPDATE sessions SET updated_at = ? WHERE id = ?', [new Date().toISOString(), sessionId]);
+      }
+      return fullText; // return final text for callers that need it (e.g. /end)
+    }
+  }
+  return '';
+}
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.get('/api/campaigns', (req, res) => {
   res.json(Object.values(CAMPAIGNS).map(({ id, name, subtitle, icon, color }) => ({ id, name, subtitle, icon, color })));
@@ -154,11 +265,11 @@ app.get('/api/campaigns', (req, res) => {
 app.get('/api/campaigns/:campaignId/files', (req, res) => {
   const { campaignId } = req.params;
   if (!CAMPAIGNS[campaignId]) return res.status(404).json({ error: 'Campaign not found' });
-  const hasArbiter = existsSync(join(CAMPAIGNS_DIR, campaignId, 'rules-arbiter.md'));
   res.json({
     modules:    listFolder(campaignId, 'modules'),
     references: listFolder(campaignId, 'references'),
-    hasArbiter,
+    hasArbiter: existsSync(join(CAMPAIGNS_DIR, campaignId, 'rules-arbiter.md')),
+    hasState:   hasSessionState(campaignId),
   });
 });
 
@@ -189,10 +300,7 @@ app.get('/api/sessions/:sessionId/messages', (req, res) => {
     'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC',
     [req.params.sessionId]
   );
-  res.json(messages.map(m => ({
-    ...m,
-    arbiter_data: m.arbiter_data ? JSON.parse(m.arbiter_data) : undefined,
-  })));
+  res.json(messages);
 });
 
 app.delete('/api/sessions/:sessionId', (req, res) => {
@@ -201,14 +309,13 @@ app.delete('/api/sessions/:sessionId', (req, res) => {
   res.json({ success: true });
 });
 
-// ── Chat (streaming, with tool use) ──────────────────────────────────────────
+// ── Chat ──────────────────────────────────────────────────────────────────────
 app.post('/api/sessions/:sessionId/chat', async (req, res) => {
   const { sessionId } = req.params;
   const { message }   = req.body;
 
   const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);
   if (!session) return res.status(404).json({ error: 'Session not found' });
-
   const campaign = CAMPAIGNS[session.campaign_id];
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
@@ -216,42 +323,52 @@ app.post('/api/sessions/:sessionId/chat', async (req, res) => {
   const systemPrompt = loadSystemPrompt(session.campaign_id, contextFiles);
   const hasArbiter   = existsSync(join(CAMPAIGNS_DIR, session.campaign_id, 'rules-arbiter.md'));
 
-  const now = new Date().toISOString();
-  dbInsert(
-    'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-    [sessionId, 'user', message, now]
-  );
+  dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+    [sessionId, 'user', message, new Date().toISOString()]);
 
-  // Build Anthropic message history (exclude arbiter/archive meta-messages)
   const dbMessages = dbAll(
-    'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC',
-    [sessionId]
+    'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC', [sessionId]
   );
+  const history = buildHistory(dbMessages);
 
-  // Reconstruct full Anthropic-compatible history including tool use turns
-  const history = [];
-  for (const m of dbMessages) {
-    if (m.role === 'archive') continue; // archive posts not sent to GM
-    if (m.role === 'user' || m.role === 'assistant') {
-      history.push({ role: m.role, content: m.content });
-    }
-    // tool_use and tool_result rows are embedded in assistant/user turns
-    // They're stored separately for UI rendering but reconstructed here
-    if (m.role === 'tool_use') {
-      const data = JSON.parse(m.content);
-      // Insert as assistant tool_use block
-      const last = history[history.length - 1];
-      if (last?.role === 'assistant' && Array.isArray(last.content)) {
-        last.content.push({ type: 'tool_use', id: data.tool_use_id, name: 'query_rules', input: { question: data.question } });
-      } else {
-        history.push({ role: 'assistant', content: [{ type: 'tool_use', id: data.tool_use_id, name: 'query_rules', input: { question: data.question } }] });
-      }
-    }
-    if (m.role === 'tool_result') {
-      const data = JSON.parse(m.content);
-      history.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: data.tool_use_id, content: data.result }] });
-    }
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  try {
+    await runChatStream(res, { systemPrompt, history, hasArbiter, campaignId: session.campaign_id, sessionId, saveAssistantMessages: true });
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  } catch (err) {
+    console.error(err);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
   }
+  res.end();
+});
+
+// ── End session ───────────────────────────────────────────────────────────────
+app.post('/api/sessions/:sessionId/end', async (req, res) => {
+  const { sessionId } = req.params;
+
+  const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+  const campaign = CAMPAIGNS[session.campaign_id];
+  if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+  const contextFiles = JSON.parse(session.context_files || '[]');
+  const systemPrompt = loadSystemPrompt(session.campaign_id, contextFiles);
+  const hasArbiter   = existsSync(join(CAMPAIGNS_DIR, session.campaign_id, 'rules-arbiter.md'));
+
+  // Build history without the state-save instruction
+  const dbMessages = dbAll(
+    'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC', [sessionId]
+  );
+  const history = buildHistory(dbMessages);
+
+  // Add the end-of-session instruction as a user turn
+  history.push({
+    role: 'user',
+    content: 'The session is now ending. Please produce the full session state snapshot as instructed in your system prompt. Output only the state block — no other commentary.',
+  });
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -260,105 +377,66 @@ app.post('/api/sessions/:sessionId/chat', async (req, res) => {
   function send(data) { res.write(`data: ${JSON.stringify(data)}\n\n`); }
 
   try {
-    let continueLoop = true;
+    send({ state_start: true });
 
-    while (continueLoop) {
-      continueLoop = false;
-      let fullText = '';
-      let toolUseBlock = null;
-      let toolUseJson  = '';
+    // Stream the state output but don't save it as a normal message
+    const stateContent = await runChatStream(res, {
+      systemPrompt, history, hasArbiter,
+      campaignId: session.campaign_id,
+      sessionId,
+      saveAssistantMessages: false,
+    });
 
-      const stream = anthropic.messages.stream({
-        model:      'claude-opus-4-5',
-        max_tokens: 2048,
-        system:     systemPrompt,
-        tools:      hasArbiter ? [QUERY_RULES_TOOL] : [],
-        messages:   history,
-      });
+    if (stateContent) {
+      // Save state to file with backup
+      saveSessionState(session.campaign_id, stateContent);
 
-      for await (const event of stream) {
-        if (event.type === 'content_block_start') {
-          if (event.content_block.type === 'tool_use') {
-            toolUseBlock = { id: event.content_block.id, name: event.content_block.name };
-            toolUseJson  = '';
-          }
-        }
-        if (event.type === 'content_block_delta') {
-          if (event.delta.type === 'text_delta') {
-            fullText += event.delta.text;
-            send({ text: event.delta.text });
-          }
-          if (event.delta.type === 'input_json_delta') {
-            toolUseJson += event.delta.partial_json;
-          }
-        }
-        if (event.type === 'message_delta' && event.delta.stop_reason === 'tool_use') {
-          continueLoop = true;
-        }
-      }
+      // Save as a special 'state' message in the session for the UI
+      dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+        [sessionId, 'state', stateContent, new Date().toISOString()]);
 
-      if (toolUseBlock) {
-        // Parse tool input
-        let toolInput = {};
-        try { toolInput = JSON.parse(toolUseJson); } catch {}
-        const question = toolInput.question ?? toolUseJson;
-
-        // Save any partial GM text before tool call
-        if (fullText.trim()) {
-          dbInsert(
-            'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-            [sessionId, 'assistant', fullText, new Date().toISOString()]
-          );
-          history.push({ role: 'assistant', content: fullText });
-        }
-
-        // Notify client: arbiter is being consulted
-        send({ arbiter_start: true, question });
-
-        // Call the arbiter
-        const ruling = await callArbiter(session.campaign_id, question);
-
-        // Save tool_use and tool_result rows for UI rendering
-        const toolUseId = toolUseBlock.id;
-        dbInsert(
-          'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-          [sessionId, 'tool_use', JSON.stringify({ tool_use_id: toolUseId, question }), new Date().toISOString()]
-        );
-        dbInsert(
-          'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-          [sessionId, 'tool_result', JSON.stringify({ tool_use_id: toolUseId, result: ruling }), new Date().toISOString()]
-        );
-
-        // Send full arbiter result to client
-        send({ arbiter_done: true, question, ruling });
-
-        // Append to history for next loop iteration
-        history.push({ role: 'assistant', content: [
-          ...(fullText ? [{ type: 'text', text: fullText }] : []),
-          { type: 'tool_use', id: toolUseId, name: 'query_rules', input: { question } },
-        ]});
-        history.push({ role: 'user', content: [
-          { type: 'tool_result', tool_use_id: toolUseId, content: ruling },
-        ]});
-
-      } else if (fullText) {
-        // Normal response — save and finish
-        dbInsert(
-          'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-          [sessionId, 'assistant', fullText, new Date().toISOString()]
-        );
-        dbRun('UPDATE sessions SET updated_at = ? WHERE id = ?', [new Date().toISOString(), sessionId]);
-      }
+      // Mark session as ended
+      dbRun('UPDATE sessions SET ended_at = ?, updated_at = ? WHERE id = ?',
+        [new Date().toISOString(), new Date().toISOString(), sessionId]);
     }
 
+    send({ state_done: true, content: stateContent });
     send({ done: true });
-    res.end();
   } catch (err) {
-    console.error('Error:', err);
+    console.error(err);
     send({ error: err.message });
-    res.end();
   }
+  res.end();
 });
+
+// ── History builder ───────────────────────────────────────────────────────────
+function buildHistory(dbMessages) {
+  const history = [];
+  for (const m of dbMessages) {
+    if (m.role === 'archive' || m.role === 'state') continue;
+    if (m.role === 'user' || m.role === 'assistant') {
+      history.push({ role: m.role, content: m.content });
+    }
+    if (m.role === 'tool_use') {
+      try {
+        const d = JSON.parse(m.content);
+        const last = history[history.length - 1];
+        if (last?.role === 'assistant' && Array.isArray(last.content)) {
+          last.content.push({ type: 'tool_use', id: d.tool_use_id, name: 'query_rules', input: { question: d.question } });
+        } else {
+          history.push({ role: 'assistant', content: [{ type: 'tool_use', id: d.tool_use_id, name: 'query_rules', input: { question: d.question } }] });
+        }
+      } catch {}
+    }
+    if (m.role === 'tool_result') {
+      try {
+        const d = JSON.parse(m.content);
+        history.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: d.tool_use_id, content: d.result }] });
+      } catch {}
+    }
+  }
+  return history;
+}
 
 if (isProd) {
   app.get('*', (req, res) => {

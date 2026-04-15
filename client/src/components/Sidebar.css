@@ -215,3 +215,26 @@
   opacity: 0.7;
   font-style: italic;
 }
+
+/* State indicator */
+.sidebar-state-badge {
+  font-size: 0.72rem;
+  color: var(--accent-gold-dim);
+  font-style: italic;
+  padding: 6px 14px 2px;
+  display: block;
+}
+
+/* Ended sessions */
+.session-item.ended .session-title {
+  opacity: 0.6;
+}
+
+.session-ended-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border-mid);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
