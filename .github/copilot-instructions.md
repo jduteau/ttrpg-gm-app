@@ -224,7 +224,7 @@ Tool use and tool results are saved as separate DB rows (`tool_use` / `tool_resu
 ## Session State
 
 - `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` — Current state, read at every session start, overwritten on End Session
-- `rulesets/{rulesetId}/campaigns/{campaignId}/state-backups/session-state-YYYY-MM-DD.md` — Automatic dated backup before overwrite
+- `rulesets/{rulesetId}/campaigns/{campaignId}/state-backups/session-state-YYYY-MM-DD-HHmm.md` — Automatic datetime-stamped backup before overwrite (multiple saves per day are safe)
 - State is detected as "real" only if the file exists, is non-empty, and doesn't start with `<!--`
 
 End Session flow:
@@ -319,6 +319,7 @@ node import-sessions.js --list
 - State is stored as `role: 'state'` message, written to `session-state.md` in the campaign folder, and backed up to `state-backups/` if a state already exists
 - Sessions imported with `--state` are marked `ended_at` in the database
 - Available campaigns are dynamically discovered from `server/rulesets/` (no hardcoded list)
+- File paths support `~` expansion and shell backslash escapes; use single quotes in the shell to avoid quoting issues with spaces
 
 ---
 

@@ -113,7 +113,9 @@ node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-sessions/"
 node import-sessions.js --list
 ```
 
-Importing with `--state` writes the state to `session-state.md` in the campaign folder, backs up any existing state to `state-backups/`, and marks the session as ended in the database.
+Importing with `--state` writes the state to `session-state.md` in the campaign folder, backs up any existing state to `state-backups/session-state-YYYY-MM-DD-HHmm.md`, and marks the session as ended in the database.
+
+Tip: use single quotes for paths with spaces — `'~/Documents/My Sessions/session1.md'`
 
 ---
 
