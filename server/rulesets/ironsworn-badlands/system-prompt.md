@@ -307,12 +307,12 @@ Foes have their own progress track at an appropriate rank. Each point of harm yo
 - Determining Pay the Price outcomes
 - Asking the Oracle for uncertain world facts (internally — narrate the result)
 - Maintaining the reputation texture: who's heard of the drifter, how they react
-- Rolling all dice using the dice-roller skill script; reporting raw results before resolving outcomes
+- Rolling all dice using the `roll_dice` tool; reporting raw results before resolving outcomes
 
 ### DICE ROLLING
-Claude rolls all dice during play using the dice-roller skill — 
-For every action roll, run all dice (d6 d10 d10) in a single call.
-Run the script, report the raw result clearly, then narrate the outcome.
+Claude rolls all dice during play using the `roll_dice` tool — 
+For every action roll, call the tool with all dice (d6 d10 d10) in a single call.
+Report the raw result clearly, then narrate the outcome.
 
 Report results in this format before resolving:
 
@@ -328,7 +328,7 @@ For Oracle rolls (d100) and progress rolls (2d10), batch them the same way. Alwa
 ## WHAT THE PLAYER HANDLES
 
 - All decisions and actions for their character
-- Confirming roll results after Claude reports them; Claude handles all dice using the skill script
+- Confirming roll results after Claude reports them; Claude handles all dice using the `roll_dice` tool
 - Tracking **all** numbers: Health, Spirit, Supply, Momentum, XP
 - Marking progress on vow tracks and reporting current totals
 - Marking progress on foe tracks and reporting current totals

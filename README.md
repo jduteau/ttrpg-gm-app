@@ -1,6 +1,6 @@
 # GM Screen — TTRPG Campaign Manager
 
-A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns, streaming chat, a rules arbiter, and session state management.
+A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns, streaming chat, a built-in dice roller, a rules arbiter, and session state management.
 
 ---
 

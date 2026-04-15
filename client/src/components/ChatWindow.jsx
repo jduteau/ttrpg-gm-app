@@ -3,6 +3,17 @@ import './ChatWindow.css';
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
+function DiceRollBlock({ label, results }) {
+  return (
+    <div className="dice-roll-block">
+      {label && <span className="dice-roll-label">{label}</span>}
+      <div className="dice-roll-results">
+        {results.map((r, i) => <span key={i} className="dice-roll-result">{r}</span>)}
+      </div>
+    </div>
+  );
+}
+
 function ArbiterBlock({ question, ruling }) {
   const [open, setOpen] = useState(false);
   return (
@@ -77,6 +88,9 @@ function Message({ msg }) {
   if (msg.role === 'arbiter') {
     return <ArbiterBlock question={msg.question} ruling={msg.ruling} />;
   }
+  if (msg.role === 'dice_roll') {
+    return <DiceRollBlock label={msg.label} results={msg.results} />;
+  }
   if (msg.role === 'tool_use' || msg.role === 'tool_result') return null;
 
   return (
@@ -94,13 +108,22 @@ function mergeMessages(raw) {
     if (m.role === 'tool_use') {
       try {
         const d = typeof m.content === 'string' ? JSON.parse(m.content) : m.content;
-        toolUseMap[d.tool_use_id] = { id: m.id, question: d.question };
+        if (d.expressions) {
+          toolUseMap[d.tool_use_id] = { id: m.id, type: 'dice', label: d.label, expressions: d.expressions };
+        } else {
+          toolUseMap[d.tool_use_id] = { id: m.id, type: 'arbiter', question: d.question };
+        }
       } catch {}
     } else if (m.role === 'tool_result') {
       try {
         const d = typeof m.content === 'string' ? JSON.parse(m.content) : m.content;
         const use = toolUseMap[d.tool_use_id];
-        if (use) result.push({ id: `arbiter-${use.id}`, role: 'arbiter', question: use.question, ruling: d.result });
+        if (use?.type === 'arbiter') {
+          result.push({ id: `arbiter-${use.id}`, role: 'arbiter', question: use.question, ruling: d.result });
+        } else if (use?.type === 'dice') {
+          const results = d.result.split('\n').filter(Boolean);
+          result.push({ id: `dice-${use.id}`, role: 'dice_roll', label: use.label, results });
+        }
       } catch {}
     } else {
       result.push(m);
@@ -136,6 +159,7 @@ export default function ChatWindow({ session, campaign }) {
   const [streamBuffer,   setStreamBuffer]   = useState('');
   const [pendingArbiter, setPendingArbiter] = useState(null);
   const [arbiterBlocks,  setArbiterBlocks]  = useState([]);
+  const [diceRollBlocks, setDiceRollBlocks] = useState([]);
   const [ending,         setEnding]         = useState(false);
   const [stateBuffer,    setStateBuffer]    = useState('');
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -152,14 +176,14 @@ export default function ChatWindow({ session, campaign }) {
         setSessionEnded(!!session.ended_at);
       });
     setStreamBuffer(''); setStreaming(false);
-    setPendingArbiter(null); setArbiterBlocks([]);
+    setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
     setEnding(false); setStateBuffer('');
     setShowEndConfirm(false);
   }, [session.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, stateBuffer]);
+  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer]);
 
   // ── Send chat message ───────────────────────────────────────────────────────
   const send = async () => {
@@ -169,7 +193,7 @@ export default function ChatWindow({ session, campaign }) {
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setMessages(m => [...m, { role: 'user', content: text, id: Date.now() }]);
     setStreaming(true); setStreamBuffer('');
-    setPendingArbiter(null); setArbiterBlocks([]);
+    setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
 
     try {
       const res = await fetch(`/api/sessions/${session.id}/chat`, {
@@ -237,6 +261,10 @@ export default function ChatWindow({ session, campaign }) {
             setArbiterBlocks(bs => [...bs, { question: data.question, ruling: data.ruling }]);
           }
 
+          if (data.dice_roll) {
+            setDiceRollBlocks(bs => [...bs, { label: data.label, results: data.results }]);
+          }
+
           if (data.done) {
             if (isEnd) {
               // Reload to get the saved state message
@@ -248,7 +276,7 @@ export default function ChatWindow({ session, campaign }) {
             } else {
               const fresh = await fetch(`/api/sessions/${session.id}/messages`).then(r => r.json());
               setMessages(mergeMessages(fresh));
-              setStreamBuffer(''); setArbiterBlocks([]); setPendingArbiter(null);
+              setStreamBuffer(''); setArbiterBlocks([]); setDiceRollBlocks([]); setPendingArbiter(null);
               setStreaming(false);
             }
           }
@@ -306,6 +334,9 @@ export default function ChatWindow({ session, campaign }) {
 
         {messages.map((msg, i) => <Message key={msg.id ?? i} msg={msg} />)}
 
+        {diceRollBlocks.map((b, i) => (
+          <DiceRollBlock key={`live-dice-${i}`} label={b.label} results={b.results} />
+        ))}
         {arbiterBlocks.map((b, i) => (
           <ArbiterBlock key={`live-arbiter-${i}`} question={b.question} ruling={b.ruling} />
         ))}

@@ -383,6 +383,42 @@
 .arbiter-q { color: var(--text-secondary); font-style: italic; }
 .arbiter-a { color: var(--text-primary); white-space: pre-wrap; }
 
+/* ── Dice roll block ──────────────────────────────────────────────────────── */
+.dice-roll-block {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 6px 32px;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeUp 0.2s ease both;
+  border-left: 3px solid var(--accent-gold-dim);
+  background: rgba(212, 175, 55, 0.04);
+}
+
+.dice-roll-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.dice-roll-results {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.dice-roll-result {
+  font-size: 0.88rem;
+  color: var(--accent-gold);
+  font-family: var(--font-body);
+}
+
 /* ── Session state block ──────────────────────────────────────────────────── */
 .state-block {
   border: 1px solid var(--border-dim);

@@ -203,9 +203,9 @@ All rolls are 2d6 + the relevant Label.
 6-:  Miss — mark Potential, GM makes a move
 
 DICE ROLLING PROCEDURE:
-Claude rolls all dice for all heroes using the dice-roller skill — 
+Claude rolls all dice for all heroes using the `roll_dice` tool — 
 for the player's hero and for teammates. Before every roll, announce 
-what is being rolled and which Label applies. Run the script, 
+what is being rolled and which Label applies. Call the tool, 
 report the raw result clearly, then narrate the outcome.
 
 Format: "Vigil is Directly Engaging — rolling 2d6+1 (Danger +1)"

@@ -3,6 +3,7 @@ import cors from 'cors';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
+import { randomInt } from 'crypto';
 import initSqlJs from 'sql.js';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
@@ -457,6 +458,66 @@ const QUERY_RULES_TOOL = {
   },
 };
 
+const ROLL_DICE_TOOL = {
+  name: 'roll_dice',
+  description: 'Roll dice for any game mechanic — attack rolls, saving throws, damage, random encounters, morale checks, ability checks, treasure rolls, or any other roll required during play. Always use this tool instead of assuming or narrating a result. Roll all dice for a single action together.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      expressions: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Dice expressions to roll. Supported formats: d20, 2d6, 3d6+2, 4d6k3 (keep highest 3), d100, d8-1.',
+      },
+      label: {
+        type: 'string',
+        description: 'Brief label for what is being rolled, e.g. "Attack roll vs AC 5" or "Saving throw vs death".',
+      },
+    },
+    required: ['expressions'],
+  },
+};
+
+// Dice rolling — cryptographically random, mirrors the dice-roller skill script
+function rollDie(sides) { return randomInt(1, sides + 1); }
+
+function parseAndRoll(expr) {
+  expr = expr.trim().toLowerCase();
+  const keepMatch = expr.match(/^(\d*)d(\d+)k(\d+)$/);
+  if (keepMatch) {
+    const num = parseInt(keepMatch[1]) || 1;
+    const sides = parseInt(keepMatch[2]);
+    const keep = parseInt(keepMatch[3]);
+    const rolls = Array.from({ length: num }, () => rollDie(sides));
+    const kept = [...rolls].sort((a, b) => b - a).slice(0, keep);
+    return { expression: expr, rolls, kept, modifier: 0, total: kept.reduce((s, r) => s + r, 0), note: `Kept highest ${keep}` };
+  }
+  const stdMatch = expr.match(/^(\d*)d(\d+)([+-]\d+)?$/);
+  if (stdMatch) {
+    const num = parseInt(stdMatch[1]) || 1;
+    const sides = parseInt(stdMatch[2]);
+    const modifier = parseInt(stdMatch[3] || '0');
+    const rolls = Array.from({ length: num }, () => rollDie(sides));
+    const total = rolls.reduce((s, r) => s + r, 0) + modifier;
+    return { expression: expr, rolls, kept: rolls, modifier, total, note: '' };
+  }
+  return { error: `Could not parse: '${expr}'` };
+}
+
+function formatDiceResult(result) {
+  if (result.error) return `ERROR: ${result.error}`;
+  const expr = result.expression.toUpperCase();
+  const { rolls, modifier, total, note } = result;
+  if (rolls.length === 1 && modifier === 0) return `🎲 ${expr} → ${total}`;
+  if (note) return `🎲 ${expr} → [${result.rolls.join(', ')}] ${note} = ${result.kept.reduce((s, r) => s + r, 0)}`;
+  const modStr = modifier !== 0 ? (modifier > 0 ? `+${modifier}` : `${modifier}`) : '';
+  return `🎲 ${expr} → [${rolls.join(' + ')}]${modStr} = ${total}`;
+}
+
+function rollDice(expressions) {
+  return expressions.map(expr => formatDiceResult(parseAndRoll(expr)));
+}
+
 // ── Anthropic ─────────────────────────────────────────────────────────────────
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -486,7 +547,7 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
       model:      'claude-opus-4-5',
       max_tokens: 2048,
       system:     systemPrompt,
-      tools:      hasArbiter ? [QUERY_RULES_TOOL] : [],
+      tools:      hasArbiter ? [QUERY_RULES_TOOL, ROLL_DICE_TOOL] : [ROLL_DICE_TOOL],
       messages:   history,
     });
 
@@ -512,34 +573,61 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
     if (toolUseBlock) {
       let toolInput = {};
       try { toolInput = JSON.parse(toolUseJson); } catch {}
-      const question = toolInput.question ?? toolUseJson;
+      const toolUseId = toolUseBlock.id;
+      const toolName  = toolUseBlock.name;
 
       if (fullText.trim() && saveAssistantMessages) {
         dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
           [sessionId, 'assistant', fullText, new Date().toISOString()]);
-        history.push({ role: 'assistant', content: fullText });
       }
 
-      send({ arbiter_start: true, question });
-      const ruling = await callArbiter(campaignId, question);
+      if (toolName === 'roll_dice') {
+        const expressions = toolInput.expressions ?? [];
+        const label       = toolInput.label ?? '';
+        const results     = rollDice(expressions);
+        const resultText  = results.join('\n');
 
-      const toolUseId = toolUseBlock.id;
-      if (saveAssistantMessages) {
-        dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-          [sessionId, 'tool_use', JSON.stringify({ tool_use_id: toolUseId, question }), new Date().toISOString()]);
-        dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-          [sessionId, 'tool_result', JSON.stringify({ tool_use_id: toolUseId, result: ruling }), new Date().toISOString()]);
+        if (saveAssistantMessages) {
+          dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+            [sessionId, 'tool_use', JSON.stringify({ tool_use_id: toolUseId, tool_name: 'roll_dice', expressions, label }), new Date().toISOString()]);
+          dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+            [sessionId, 'tool_result', JSON.stringify({ tool_use_id: toolUseId, result: resultText }), new Date().toISOString()]);
+        }
+
+        send({ dice_roll: true, label, expressions, results });
+
+        history.push({ role: 'assistant', content: [
+          ...(fullText ? [{ type: 'text', text: fullText }] : []),
+          { type: 'tool_use', id: toolUseId, name: 'roll_dice', input: { expressions, label } },
+        ]});
+        history.push({ role: 'user', content: [
+          { type: 'tool_result', tool_use_id: toolUseId, content: resultText },
+        ]});
+
+      } else {
+        // query_rules (arbiter)
+        const question = toolInput.question ?? '';
+
+        send({ arbiter_start: true, question });
+        const ruling = await callArbiter(campaignId, question);
+
+        if (saveAssistantMessages) {
+          dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+            [sessionId, 'tool_use', JSON.stringify({ tool_use_id: toolUseId, question }), new Date().toISOString()]);
+          dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+            [sessionId, 'tool_result', JSON.stringify({ tool_use_id: toolUseId, result: ruling }), new Date().toISOString()]);
+        }
+
+        send({ arbiter_done: true, question, ruling });
+
+        history.push({ role: 'assistant', content: [
+          ...(fullText ? [{ type: 'text', text: fullText }] : []),
+          { type: 'tool_use', id: toolUseId, name: 'query_rules', input: { question } },
+        ]});
+        history.push({ role: 'user', content: [
+          { type: 'tool_result', tool_use_id: toolUseId, content: ruling },
+        ]});
       }
-
-      send({ arbiter_done: true, question, ruling });
-
-      history.push({ role: 'assistant', content: [
-        ...(fullText ? [{ type: 'text', text: fullText }] : []),
-        { type: 'tool_use', id: toolUseId, name: 'query_rules', input: { question } },
-      ]});
-      history.push({ role: 'user', content: [
-        { type: 'tool_result', tool_use_id: toolUseId, content: ruling },
-      ]});
 
     } else if (fullText) {
       if (saveAssistantMessages) {
@@ -765,11 +853,16 @@ function buildHistory(dbMessages) {
     if (m.role === 'tool_use') {
       try {
         const d = JSON.parse(m.content);
+        const toolName = d.tool_name || 'query_rules';
+        const input = d.expressions
+          ? { expressions: d.expressions, label: d.label }
+          : { question: d.question };
+        const entry = { type: 'tool_use', id: d.tool_use_id, name: toolName, input };
         const last = history[history.length - 1];
         if (last?.role === 'assistant' && Array.isArray(last.content)) {
-          last.content.push({ type: 'tool_use', id: d.tool_use_id, name: 'query_rules', input: { question: d.question } });
+          last.content.push(entry);
         } else {
-          history.push({ role: 'assistant', content: [{ type: 'tool_use', id: d.tool_use_id, name: 'query_rules', input: { question: d.question } }] });
+          history.push({ role: 'assistant', content: [entry] });
         }
       } catch {}
     }

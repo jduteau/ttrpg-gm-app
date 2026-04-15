@@ -221,6 +221,23 @@ Tool use and tool results are saved as separate DB rows (`tool_use` / `tool_resu
 
 ---
 
+## Dice Roller
+
+The GM always has a `roll_dice` tool available (alongside `query_rules` when an arbiter exists). The tool:
+
+1. Is called by the GM with `{ expressions: ["d20", "2d6"], label: "Attack roll" }`
+2. Rolls dice server-side using `crypto.randomInt` (cryptographically random)
+3. Emits `{ dice_roll: true, label, expressions, results }` SSE event to the client
+4. Returns the formatted result string to the GM as a tool result so it can narrate the outcome
+
+Supported expressions: `d20`, `2d6`, `3d6+2`, `4d6k3` (keep highest 3), `d100`, `d8-1`
+
+DB storage: `tool_use` row has `{ tool_use_id, tool_name: 'roll_dice', expressions, label }`; `tool_result` row has `{ tool_use_id, result }`.
+
+The `ChatWindow` renders dice rolls as compact `DiceRollBlock` components. `mergeMessages()` detects dice roll pairs by the presence of `d.expressions` (vs `d.question` for arbiter pairs).
+
+---
+
 ## Session State
 
 - `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` — Current state, read at every session start, overwritten on End Session

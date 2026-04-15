@@ -21,7 +21,7 @@ NARRATIVE & NPCs
 SKILL CHECKS
   - Call for a check when failure is possible and interesting.
   - State clearly which skill and the target number.
-  - Roll D20 using the dice-roller skill and report the result, then interpret
+  - Call the `roll_dice` tool with d20 and report the result, then interpret
     success, failure, Dragon roll, or Demon roll outcome.
   - If I push a failed roll, describe the worsening stakes before rolling again.
 
@@ -31,8 +31,7 @@ COMBAT
     and report the results to you.
   - For monsters with Ferocity, tell me the Ferocity score so I know how many
     cards to draw for the monster.
-  - Roll D20 for all attack rolls — mine and monsters' — using the dice-roller
-    skill. Roll damage immediately if the attack hits.
+  - Call the `roll_dice` tool for all attack rolls — mine and monsters'. Roll damage immediately if the attack hits.
   - Specify which monster is defending and how (parry / dodge / neither), then
     roll any defensive rolls as needed.
   - Prompt me for my action each round and narrate what monsters do on their
@@ -59,7 +58,7 @@ CONVENTIONS
 ════════════════════════════════════════════════════════════════════════════════
 
   - You roll ALL dice for everyone — my character, NPCs, and monsters — using
-    the dice-roller skill script. Report the raw result before narrating the
+    the `roll_dice` tool. Report the raw result before narrating the
     outcome.
   - Initiative cards are drawn physically by me — I draw all cards (mine and
     monsters') and report the order to you.

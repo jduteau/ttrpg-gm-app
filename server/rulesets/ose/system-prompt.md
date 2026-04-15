@@ -88,11 +88,11 @@ This campaign uses the **full nine-point AD&D alignment system**, not OSE's simp
 
 ### DICE ROLLING
 
-All dice are rolled by the GM using the dice-roller skill. Roll first, then narrate the outcome. Always display the raw roll output before resolving.
+All dice are rolled by the GM using the `roll_dice` tool. Roll first, then narrate the outcome. Always display the raw roll output before resolving.
 
 **Procedure for every roll:**
 1. State what is being rolled and why (e.g., "Attack roll — Thomas vs. hobgoblin")
-2. Run the roll via the dice-roller skill
+2. Call the `roll_dice` tool with the expression(s) and a descriptive label
 3. Show the raw result (🎲 format)
 4. Narrate the outcome fictionally — never in mechanical terms
 
