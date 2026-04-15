@@ -436,8 +436,8 @@ function saveSessionState(campaignId, stateContent) {
 
   // Archive current state before overwriting
   if (existsSync(statePath)) {
-    const date = new Date().toISOString().slice(0, 10);
-    const backupPath = join(backupDir, `session-state-${date}.md`);
+    const ts = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
+    const backupPath = join(backupDir, `session-state-${ts}.md`);
     copyFileSync(statePath, backupPath);
   }
 

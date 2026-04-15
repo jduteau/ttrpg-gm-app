@@ -16,7 +16,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, copyFileSync } from 'fs';
-import { join, basename, extname, dirname } from 'path';
+import { join, basename, extname, dirname, resolve, isAbsolute } from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
@@ -25,6 +25,16 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Load sql.js from server's node_modules (not installed at root level)
 const serverRequire = createRequire(join(__dirname, 'server', 'index.js'));
 const initSqlJs = serverRequire('sql.js');
+
+// Expand ~ and resolve to absolute path, strip shell escape backslashes
+function resolvePath(p) {
+  if (!p) return p;
+  p = p.replace(/\\(.)/g, '$1');  // unescape shell backslash sequences (e.g. "\ " → " ")
+  if (p.startsWith('~/') || p === '~') {
+    p = join(process.env.HOME, p.slice(1));
+  }
+  return isAbsolute(p) ? p : resolve(p);
+}
 
 // ── Parse args ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -162,10 +172,10 @@ function saveSessionStateFile(campaignId, stateContent) {
   mkdirSync(backupDir, { recursive: true });
 
   if (existsSync(statePath)) {
-    const date = new Date().toISOString().slice(0, 10);
-    const backupPath = join(backupDir, `session-state-${date}.md`);
+    const ts = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
+    const backupPath = join(backupDir, `session-state-${ts}.md`);
     copyFileSync(statePath, backupPath);
-    console.log(`  → Backed up existing state to state-backups/session-state-${date}.md`);
+    console.log(`  → Backed up existing state to state-backups/session-state-${ts}.md`);
   }
 
   writeFileSync(statePath, stateContent, 'utf-8');
@@ -269,29 +279,34 @@ if (filePath || statePath) {
     console.error('Error: --dir cannot be combined with --file or --state.');
     process.exit(1);
   }
-  const ok = importSession(campaignId, { recapFile: filePath, stateFile: statePath, title: titleArg });
+  const ok = importSession(campaignId, {
+    recapFile: filePath ? resolvePath(filePath) : null,
+    stateFile: statePath ? resolvePath(statePath) : null,
+    title: titleArg
+  });
   process.exit(ok ? 0 : 1);
 }
 
 // Bulk directory import (recaps only)
 if (dirPath) {
-  if (!existsSync(dirPath)) {
-    console.error(`Error: directory not found: ${dirPath}`);
+  const resolvedDir = resolvePath(dirPath);
+  if (!existsSync(resolvedDir)) {
+    console.error(`Error: directory not found: ${resolvedDir}`);
     process.exit(1);
   }
-  const files = readdirSync(dirPath)
+  const files = readdirSync(resolvedDir)
     .filter(f => ['.md', '.txt'].includes(extname(f).toLowerCase()))
     .sort();
 
   if (files.length === 0) {
-    console.error(`No .md or .txt files found in ${dirPath}`);
+    console.error(`No .md or .txt files found in ${resolvedDir}`);
     process.exit(1);
   }
 
   console.log(`Importing ${files.length} file(s) into ${campaignId}...\n`);
   let ok = 0;
   for (const file of files) {
-    if (importSession(campaignId, { recapFile: join(dirPath, file), title: null })) ok++;
+    if (importSession(campaignId, { recapFile: join(resolvedDir, file), title: null })) ok++;
   }
   console.log(`\nDone: ${ok}/${files.length} imported.`);
   process.exit(ok === files.length ? 0 : 1);
