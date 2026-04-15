@@ -11,6 +11,7 @@ export default function App() {
   const [activeSession, setActiveSession] = useState(null);
   const [showSelector, setShowSelector] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetch('/api/campaigns')
@@ -23,6 +24,7 @@ export default function App() {
     setActiveCampaign(campaign);
     setActiveSession(null);
     setShowSelector(false);
+    setSidebarOpen(false);
   };
 
   const handleNewSession = () => {
@@ -38,11 +40,18 @@ export default function App() {
     });
     const session = await res.json();
     setActiveSession(session);
+    setSidebarOpen(false);
   };
 
   const handleChangeCampaign = () => {
     setShowSelector(true);
     setActiveSession(null);
+    setSidebarOpen(false);
+  };
+
+  const handleSelectSession = (session) => {
+    setActiveSession(session);
+    setSidebarOpen(false);
   };
 
   if (showSelector || !activeCampaign) {
@@ -57,15 +66,34 @@ export default function App() {
 
   return (
     <div className="app-layout">
+      <div
+        className={`sidebar-scrim ${sidebarOpen ? 'open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden={!sidebarOpen}
+      />
+
       <Sidebar
         campaign={activeCampaign}
         activeSession={activeSession}
-        onSelectSession={setActiveSession}
+        onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
         onChangeCampaign={handleChangeCampaign}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="app-main">
+        <button
+          className="mobile-sidebar-toggle"
+          type="button"
+          onClick={() => setSidebarOpen(open => !open)}
+          aria-expanded={sidebarOpen}
+          aria-label={sidebarOpen ? 'Close campaign drawer' : 'Open campaign drawer'}
+        >
+          <span className="mobile-sidebar-toggle-icon">☰</span>
+          <span className="mobile-sidebar-toggle-text">Campaigns</span>
+        </button>
+
         {activeSession ? (
           <ChatWindow session={activeSession} campaign={activeCampaign} />
         ) : (

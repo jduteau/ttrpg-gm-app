@@ -64,6 +64,10 @@ html, body, #root {
   overflow: hidden;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background:
     radial-gradient(circle at top, var(--bg-body-glow) 0%, var(--bg-body-glow-edge) 42%),
@@ -74,6 +78,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   background-attachment: fixed;
+  overscroll-behavior: none;
 }
 
 /* Scrollbar */

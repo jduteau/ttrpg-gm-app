@@ -1,7 +1,8 @@
 .selector-screen {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -172,4 +173,50 @@
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .selector-content {
+    max-width: 720px;
+    padding: 36px 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .selector-screen {
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .selector-content {
+    padding: calc(28px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .selector-header {
+    gap: 12px;
+  }
+
+  .selector-header h1 {
+    font-size: 1.15rem;
+    letter-spacing: 0.18em;
+  }
+
+  .selector-subtitle {
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .campaign-card {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .card-name {
+    font-size: 0.84rem;
+  }
+
+  .card-sub {
+    font-size: 0.8rem;
+  }
 }

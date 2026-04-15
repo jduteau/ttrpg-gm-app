@@ -3,7 +3,14 @@ import './Sidebar.css';
 
 function formatDate(iso) {
   const d = new Date(iso);
-  return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('en-CA', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }) + ' · ' + d.toLocaleTimeString('en-CA', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 function fileLabel(path) {
@@ -12,7 +19,15 @@ function fileLabel(path) {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-export default function Sidebar({ campaign, activeSession, onSelectSession, onNewSession, onChangeCampaign }) {
+export default function Sidebar({
+  campaign,
+  activeSession,
+  onSelectSession,
+  onNewSession,
+  onChangeCampaign,
+  isOpen,
+  onClose,
+}) {
   const [sessions, setSessions] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -40,9 +55,12 @@ export default function Sidebar({ campaign, activeSession, onSelectSession, onNe
   const references = contextFiles.filter(f => f.startsWith('references/'));
 
   return (
-    <aside className="sidebar" style={{ '--campaign-color': campaign.color }}>
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{ '--campaign-color': campaign.color }}>
       <div className="sidebar-header">
-        <button className="campaign-back" onClick={onChangeCampaign}>← All Campaigns</button>
+        <div className="sidebar-header-top">
+          <button className="campaign-back" onClick={onChangeCampaign}>← All Campaigns</button>
+          <button className="sidebar-close" onClick={onClose} aria-label="Close campaign drawer">✕</button>
+        </div>
         <div className="sidebar-campaign">
           <span className="sidebar-icon">{campaign.icon}</span>
           <div>

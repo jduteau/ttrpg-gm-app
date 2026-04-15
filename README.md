@@ -4,6 +4,8 @@ A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Nod
 
 The UI uses a parchment palette with shared theme tokens for campaign accents, arbiter highlights, destructive actions, overlays, shadows, and surface washes so the client stays visually consistent across screens and dialogs. Theme retuning should happen in `client/src/index.css` rather than by editing literal colors in individual component styles.
 
+The frontend is responsive for desktop, iPad, and iPhone layouts. On narrower screens the campaign sidebar becomes a slide-in drawer, the new-session dialog becomes a bottom sheet, and the app uses dynamic viewport sizing plus safe-area padding for Mobile Safari.
+
 ---
 
 ## Setup

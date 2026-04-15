@@ -289,6 +289,7 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `server/ru
 - **Font stack**: `--font-display` (Cinzel) for headings/labels, `--font-body` (Crimson Pro) for prose
 - **Parchment theme** — backgrounds use `--bg-void` / `--bg-deep` / `--bg-surface` / `--bg-raised` for warm paper surfaces rather than dark panels
 - **Animations**: `fadeUp` keyframe used for message/block entry; `blink` for streaming cursor
+- **Responsive shell** — pair `100vh` with `100dvh`, set `viewport-fit=cover`, and use `env(safe-area-inset-*)` spacing so the UI behaves on iPhone/iPad Safari. On narrow screens the sidebar is a drawer controlled by `App.jsx`, and `NewSessionDialog` becomes a bottom sheet.
 
 ### Key CSS variables
 
@@ -359,5 +360,6 @@ node import-sessions.js --list
 - **Campaign color theming**: pass `style={{ '--campaign-color': ruleset.color }}` on a container, then use `var(--campaign-color)` in CSS. Colors come from the ruleset, not individual campaigns.
 - **Accent palette**: prefer muted, ink-friendly campaign accents that still contrast on parchment backgrounds; avoid neon or overly saturated hues in `RULESET_DEFAULTS` and CSS vars.
 - **Theme tokens first**: when adjusting the parchment UI, prefer adding or reusing semantic CSS variables in `client/src/index.css` rather than scattering literal `rgba(...)`, shadows, or parchment tint values across component styles.
+- **Mobile navigation**: preserve access to campaigns and sessions through the drawer toggle in `App.jsx`; do not assume the sidebar is permanently visible.
 - **File label formatting**: `labelFromFilename()` strips leading `01-` numeric prefixes and converts hyphens/underscores to title case. Campaign vs shared files are distinguished by `[Campaign]` and `[Shared]` prefixes.
 - **Dynamic discovery caching**: `scanRulesets()` and `scanCampaigns()` cache results in module-level variables — the file system is only scanned once per server process. Use `getRuleset(id)` and `getCampaign(id)` helpers throughout the server code.

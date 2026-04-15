@@ -1,8 +1,10 @@
 .app-layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   overflow: hidden;
+  position: relative;
   background:
     linear-gradient(180deg, var(--bg-wash), transparent),
     var(--bg-void);
@@ -13,6 +15,48 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.sidebar-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-veil);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+  z-index: 20;
+}
+
+.sidebar-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-sidebar-toggle {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  margin: 12px 12px 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border-dim);
+  border-radius: 999px;
+  background: var(--bg-panel-tint-strong);
+  box-shadow: var(--shadow-gold-tight);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 10;
+}
+
+.mobile-sidebar-toggle-icon {
+  font-size: 0.95rem;
 }
 
 /* Empty state */
@@ -32,6 +76,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  padding: 32px 24px;
   animation: fadeUp 0.5s ease both;
 }
 
@@ -76,6 +121,41 @@
   background: var(--accent-gold-glow);
   border-color: var(--accent-gold);
   box-shadow: var(--shadow-gold-soft);
+}
+
+@media (min-width: 901px) {
+  .sidebar-scrim {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .mobile-sidebar-toggle {
+    display: inline-flex;
+  }
+
+  .empty-state {
+    padding: 0 16px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobile-sidebar-toggle {
+    margin: calc(10px + env(safe-area-inset-top, 0px)) 12px 0;
+  }
+
+  .empty-state-inner h2 {
+    font-size: 1.35rem;
+  }
+
+  .empty-state-inner p {
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    width: 100%;
+    max-width: 280px;
+  }
 }
 
 @keyframes fadeUp {
