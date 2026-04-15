@@ -13,7 +13,6 @@ ttrpg-gm-app/
 │   ├── arbiter-prompt.md               # Shared rules arbiter persona
 │   ├── session-state-instructions.md   # Shared GM instructions for reading/writing state
 │   ├── session-state-template.md       # Universal session state template (fallback)
-│   ├── migrations/                     # Database migration scripts
 │   └── rulesets/
 │       ├── ose/
 │       │   ├── system-prompt.md        # Core OSE rules and mechanics
@@ -36,8 +35,20 @@ ttrpg-gm-app/
 │       │       └── halcyon-city/
 │       │           ├── campaign-prompt.md    # Team details, setting
 │       │           └── session-state.md      # Current campaign state
-│       ├── dragonbane/                 # Similar structure
-│       └── ironsworn-badlands/         # Similar structure
+│       ├── dragonbane/
+│       │   ├── system-prompt.md        # Core Dragonbane rules
+│       │   ├── session-state-fields.md # Dragonbane-specific state template
+│       │   └── campaigns/
+│       │       └── dragon-emperor/
+│       │           ├── campaign-prompt.md
+│       │           └── session-state.md
+│       └── ironsworn-badlands/
+│           ├── system-prompt.md        # Core Ironsworn: Badlands rules
+│           ├── session-state-fields.md # Ironsworn-specific state template
+│           └── campaigns/
+│               └── jake-powell/
+│                   ├── campaign-prompt.md
+│                   └── session-state.md
 ├── client/
 │   ├── index.html
 │   ├── vite.config.js                  # Proxies /api → localhost:3001
@@ -169,8 +180,6 @@ All routes are in `server/index.js`.
 | POST | `/api/sessions/cleanup` | Trim messages from all ended sessions |
 | POST | `/api/sessions/:id/chat` | Send message → SSE stream |
 | POST | `/api/sessions/:id/end` | End session → SSE stream (generates + saves state) |
-| POST | `/api/sessions/:id/chat` | Send message → SSE stream |
-| POST | `/api/sessions/:id/end` | End session → SSE stream (generates + saves state) |
 
 ### SSE event types (chat and end endpoints)
 
@@ -231,38 +240,27 @@ End Session flow:
 
 ## Rulesets and Campaigns
 
-Defined in `RULESETS` and `CAMPAIGNS` objects in `server/index.js`:
+Rulesets and campaigns are **dynamically discovered** by scanning the `server/rulesets/` directory at server startup — no hardcoded definitions required.
 
-```js
-const RULESETS = {
-  ose: { id: 'ose', name: 'Old-School Essentials', description: 'Classic D&D rules', icon: '⚔️', color: '#c0392b' },
-  masks: { id: 'masks', name: 'Masks: A New Generation', description: 'Superhero teen drama', icon: '🦸', color: '#8e44ad' },
-  dragonbane: { id: 'dragonbane', name: 'Dragonbane', description: 'Swedish fantasy RPG', icon: '🐉', color: '#16a085' },
-  'ironsworn-badlands': { id: 'ironsworn-badlands', name: 'Ironsworn: Badlands', description: 'Solo iron age western', icon: '🤠', color: '#d35400' }
-};
+### Discovery mechanism (`server/index.js`)
 
-const CAMPAIGNS = {
-  'ose.lolth-conspiracy': { id: 'lolth-conspiracy', rulesetId: 'ose', name: 'The Lolth Conspiracy', description: 'Dark elf infiltration' },
-  'masks.halcyon-city': { id: 'halcyon-city', rulesetId: 'masks', name: 'Halcyon City Heroes', description: 'Superhero team adventures' },
-  'dragonbane.mercy-row': { id: 'mercy-row', rulesetId: 'dragonbane', name: 'Mercy Row', description: 'Urban fantasy campaign' },
-  'ironsworn-badlands.jake-powell': { id: 'jake-powell', rulesetId: 'ironsworn-badlands', name: "Jake Powell's Journey", description: 'Solo hero adventure' }
-};
-```
-
-Each ruleset provides core mechanics; campaigns add specific settings and parties. Ruleset colors are used for campaign theming.
+- `scanRulesets()` — reads each subdirectory of `server/rulesets/`, extracts the name from the first markdown header in `system-prompt.md`
+- `scanCampaigns()` — for each ruleset, reads each subdirectory of `campaigns/`, extracts name from `campaign-prompt.md`
+- Results are cached in `_rulesetsCache` / `_campaignsCache` for the lifetime of the server process
+- `RULESET_DEFAULTS` provides icon/color overrides for known ruleset IDs; unknown rulesets fall back to `🎲` / `#34495e`
 
 ### Adding a new campaign to an existing ruleset
 
-1. Add entry to `CAMPAIGNS` with composite ID format: `rulesetId.campaignId`
-2. Create `server/rulesets/{rulesetId}/campaigns/{campaignId}/` with `campaign-prompt.md`
-3. Optionally add campaign-specific `modules/`, `references/`, and `session-state.md`
+1. Create `server/rulesets/{rulesetId}/campaigns/{campaignId}/` with `campaign-prompt.md`
+2. Optionally add campaign-specific `modules/`, `references/`, and `session-state.md`
+3. Restart the server — it will be auto-discovered
 
 ### Adding a new ruleset
 
-1. Add entry to `RULESETS` in `server/index.js`
-2. Create `server/rulesets/{rulesetId}/` with `system-prompt.md`
-3. Optionally add `rules-arbiter.md`, `session-state-fields.md`, shared `modules/`, `references/`
-4. Create first campaign under `campaigns/` subdirectory
+1. Create `server/rulesets/{rulesetId}/` with `system-prompt.md` (first line should be a `#` header — used as the display name)
+2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, shared `modules/`, `references/`
+3. Create first campaign under `campaigns/` subdirectory
+4. Add an entry to `RULESET_DEFAULTS` in `server/index.js` for custom icon/color (optional)
 
 ---
 
@@ -325,4 +323,4 @@ Imported posts are stored as `role: 'archive'` messages and rendered as gold-bor
 - **Legacy API compatibility**: `/api/campaigns` endpoint maintains backward compatibility by converting the new structure to the old flat format for the frontend.
 - **Campaign color theming**: pass `style={{ '--campaign-color': ruleset.color }}` on a container, then use `var(--campaign-color)` in CSS. Colors come from the ruleset, not individual campaigns.
 - **File label formatting**: `labelFromFilename()` strips leading `01-` numeric prefixes and converts hyphens/underscores to title case. Campaign vs shared files are distinguished by `[Campaign]` and `[Shared]` prefixes.
-- **Database migration**: The app automatically migrates old single campaign IDs to composite format on startup via the migration system.
+- **Dynamic discovery caching**: `scanRulesets()` and `scanCampaigns()` cache results in module-level variables — the file system is only scanned once per server process. Use `getRuleset(id)` and `getCampaign(id)` helpers throughout the server code.
