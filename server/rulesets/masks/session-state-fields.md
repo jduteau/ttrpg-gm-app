@@ -2,7 +2,7 @@
 
 When writing the session state snapshot, use exactly this format and populate all fields. Replace bracketed placeholders with actual values. Do not omit sections.
 
-# The Null Protocol — Session State
+# Last Resort — Session State
 *Last updated: end of Session [N] | [brief episode title or location]*
 
 ## Campaign
