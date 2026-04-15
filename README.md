@@ -1,24 +1,20 @@
 # GM Screen — TTRPG Campaign Manager
 
-A self-hosted AI Game Master app for your tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API.
-
-## Campaigns included
-- ⚔️ OSE Advanced Fantasy — The Lolth Conspiracy
-- 🦸 Masks: A New Generation
-- 🐉 Dragonbane
-- 🤠 Ironsworn: Badlands
+A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns, streaming chat, a rules arbiter, and session state management.
 
 ---
 
 ## Setup
 
 ### 1. Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - An Anthropic API key (https://console.anthropic.com)
 
 ### 2. Install dependencies
 ```bash
 npm install
+npm install --prefix server
+npm install --prefix client
 ```
 
 ### 3. Configure your API key
@@ -27,27 +23,16 @@ cp .env.example .env
 # Edit .env and paste your ANTHROPIC_API_KEY
 ```
 
-### 4. Add your GM prompts
-Copy your system prompt text files into `server/campaigns/`:
-```
-server/campaigns/ose.txt         ← OSE Advanced Fantasy GM prompt
-server/campaigns/masks.txt       ← Masks GM prompt
-server/campaigns/dragonbane.txt  ← Dragonbane GM prompt
-server/campaigns/ironsworn.txt   ← Ironsworn Badlands GM prompt
-```
-Placeholder files are included — replace their contents with your full prompts.
-The server reloads prompts on every request, so no restart needed after editing.
-
-### 5. Run in development mode
+### 4. Run in development mode
 ```bash
 npm run dev
 ```
-Open http://localhost:5173
+Opens the client at http://localhost:5173 (API on port 3001).
 
-### 6. Run in production
+### 5. Run in production
 ```bash
-npm run build        # builds the React client into server/public
-npm run start        # serves everything from Express on port 3001
+npm run build   # compiles the React client into client/dist
+npm start       # serves everything from Express on port 3001
 ```
 
 ---
@@ -56,30 +41,83 @@ npm run start        # serves everything from Express on port 3001
 ```
 ttrpg-gm-app/
 ├── server/
-│   ├── index.js          # Express API + Anthropic streaming proxy
-│   ├── campaigns/        # GM prompt .txt files (one per campaign)
-│   └── data/             # SQLite database (auto-created on first run)
-├── client/               # Vite + React frontend
+│   ├── index.js                      # Express API, Anthropic streaming, all routes
+│   ├── arbiter-prompt.md             # Rules arbiter persona
+│   ├── session-state-instructions.md # GM instructions for reading/writing state
+│   ├── session-state-template.md     # Fallback state template
+│   └── rulesets/
+│       └── {rulesetId}/
+│           ├── system-prompt.md      # Core rules (# header = display name)
+│           ├── rules-arbiter.md      # Optional: enables the rules arbiter tool
+│           ├── session-state-fields.md  # Optional: ruleset-specific state format
+│           ├── modules/              # Shared modules (selectable per session)
+│           ├── references/           # Shared references (selectable per session)
+│           └── campaigns/
+│               └── {campaignId}/
+│                   ├── campaign-prompt.md  # Party, setting, house rules (# header = display name)
+│                   ├── session-state.md    # Current campaign state (auto-updated)
+│                   ├── state-backups/      # Dated state snapshots
+│                   ├── modules/            # Campaign-specific modules
+│                   └── references/         # Campaign-specific references
+├── client/                           # Vite + React frontend
 │   └── src/
 │       ├── App.jsx
 │       └── components/
 │           ├── CampaignSelector.jsx
 │           ├── Sidebar.jsx
-│           └── ChatWindow.jsx
+│           ├── ChatWindow.jsx
+│           └── NewSessionDialog.jsx
+├── import-sessions.js                # CLI: import recaps and state files
 ├── .env.example
 └── package.json
 ```
 
 ---
 
-## Adding a new campaign
-1. Add a new entry to the `CAMPAIGNS` object in `server/index.js`
-2. Create a corresponding prompt file in `server/campaigns/`
-3. Restart the server
+## Adding content
+
+### Add a new campaign to an existing ruleset
+1. Create `server/rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md`
+2. First line should be a `# Campaign Name` header
+3. Add a `## Campaign Overview` section for the description shown in the UI
+4. Restart the server — it auto-discovers the new campaign
+
+### Add a new ruleset
+1. Create `server/rulesets/{rulesetId}/system-prompt.md` (first line: `# Ruleset Name`)
+2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, `modules/`, `references/`
+3. Create at least one campaign under `campaigns/`
+4. Optionally add an icon/color entry to `RULESET_DEFAULTS` in `server/index.js`
+5. Restart the server
+
+---
+
+## Importing past sessions
+
+Use `import-sessions.js` to import existing session recaps and/or state files:
+
+```bash
+# Recap only
+node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md"
+node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "The Village of Hommlet"
+
+# Recap + state (marks session as ended, writes session-state.md)
+node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --state "session1-state.md"
+
+# State only
+node import-sessions.js --campaign ose.lolth-conspiracy --state "session1-state.md" --title "Session 1"
+
+# Bulk import a folder of recaps
+node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-sessions/"
+
+# List all sessions in the database
+node import-sessions.js --list
+```
+
+Importing with `--state` writes the state to `session-state.md` in the campaign folder, backs up any existing state to `state-backups/`, and marks the session as ended in the database.
 
 ---
 
 ## Data
-- All session data is stored locally in `server/data/sessions.db` (SQLite)
+- All session data is stored locally in `server/data/sessions.db` (SQLite via sql.js)
 - No data leaves your machine except API calls to Anthropic
-- To back up your campaigns, copy the `sessions.db` file
+- To back up your data, copy `server/data/sessions.db` and the `server/rulesets/` folder

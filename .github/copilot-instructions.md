@@ -297,16 +297,28 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `server/ru
 
 ## Import Tool
 
-`import-sessions.js` — run from project root, uses server's sql.js installation.
+`import-sessions.js` — run from project root. Loads sql.js via `createRequire` from `server/node_modules`.
 
 ```bash
+# Recap only
 node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "Session 1"
+
+# Recap + state (marks session ended, writes session-state.md + backup)
+node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --state "session1-state.md"
+
+# State only
+node import-sessions.js --campaign ose.lolth-conspiracy --state "session1-state.md" --title "Session 1"
+
+# Bulk import folder (recaps only, no state)
 node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-sessions/"
-node import-sessions.js --campaign ironsworn-badlands.jake-powell --file "badlands-session.md"
+
 node import-sessions.js --list
 ```
 
-Imported posts are stored as `role: 'archive'` messages and rendered as gold-bordered blocks in the UI. They are excluded from the Anthropic message history sent to the GM (the GM doesn't see archive content as conversation history).
+- Recaps are stored as `role: 'archive'` messages — rendered as gold-bordered blocks in the UI, excluded from Anthropic message history
+- State is stored as `role: 'state'` message, written to `session-state.md` in the campaign folder, and backed up to `state-backups/` if a state already exists
+- Sessions imported with `--state` are marked `ended_at` in the database
+- Available campaigns are dynamically discovered from `server/rulesets/` (no hardcoded list)
 
 ---
 

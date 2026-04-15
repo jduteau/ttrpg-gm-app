@@ -2,26 +2,29 @@
 /**
  * TTRPG GM App — Session Importer
  *
- * Imports existing session blog posts (markdown or text files) into the app database.
+ * Imports existing session recaps and/or state files into the app database.
  *
  * Usage:
+ *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md"
  *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "Session 1"
- *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md"   (title inferred from filename)
- *   node import-sessions.js --campaign ironsworn-badlands.jake-powell --dir "./ironsworn-sessions/"  (bulk import folder)
+ *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --state "session1-state.md"
+ *   node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-sessions/"  (bulk import folder)
  *
- * Campaign IDs: ose.lolth-conspiracy, masks.halcyon-city, dragonbane.dragon-emperor, ironsworn-badlands.jake-powell
- *
- * The blog post is imported as an "archive" role message — displayed differently
- * in the UI to distinguish it from live session content. You can then continue
- * the session normally and the GM will have the post as context.
+ * The recap is imported as an "archive" role message — rendered as a gold-bordered block in the UI.
+ * The state (--state) is imported as a "state" role message and marks the session as ended.
+ * You can import state-only (--state without --file) to record just the state for a session.
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, copyFileSync } from 'fs';
 import { join, basename, extname, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import initSqlJs from 'sql.js';
+import { createRequire } from 'module';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load sql.js from server's node_modules (not installed at root level)
+const serverRequire = createRequire(join(__dirname, 'server', 'index.js'));
+const initSqlJs = serverRequire('sql.js');
 
 // ── Parse args ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -35,36 +38,57 @@ function hasFlag(name) {
 
 const campaignId = getArg('campaign');
 const filePath   = getArg('file');
+const statePath  = getArg('state');
 const dirPath    = getArg('dir');
 const titleArg   = getArg('title');
 const listFlag   = hasFlag('list');
 const helpFlag   = hasFlag('help') || args.length === 0;
 
-const VALID_CAMPAIGNS = ['ose.lolth-conspiracy', 'masks.halcyon-city', 'dragonbane.dragon-emperor', 'ironsworn-badlands.jake-powell'];
-const CAMPAIGN_NAMES = {
-  'ose.lolth-conspiracy': 'OSE Advanced Fantasy — The Lolth Conspiracy',
-  'masks.halcyon-city': 'Masks: A New Generation — Halcyon City Heroes',
-  'dragonbane.dragon-emperor': 'Dragonbane — The Secret of the Dragon Emperor',
-  'ironsworn-badlands.jake-powell': 'Ironsworn: Badlands — Jake Powell\'s Journey',
-};
+// ── Discover valid campaigns by scanning rulesets directory ───────────────────
+const RULESETS_DIR = join(__dirname, 'server', 'rulesets');
+
+function discoverCampaigns() {
+  const campaigns = [];
+  if (!existsSync(RULESETS_DIR)) return campaigns;
+  const rulesetDirs = readdirSync(RULESETS_DIR, { withFileTypes: true })
+    .filter(e => e.isDirectory()).map(e => e.name);
+  for (const rulesetId of rulesetDirs) {
+    const campaignsDir = join(RULESETS_DIR, rulesetId, 'campaigns');
+    if (!existsSync(campaignsDir)) continue;
+    const campaignDirs = readdirSync(campaignsDir, { withFileTypes: true })
+      .filter(e => e.isDirectory()).map(e => e.name);
+    for (const campId of campaignDirs) {
+      campaigns.push(`${rulesetId}.${campId}`);
+    }
+  }
+  return campaigns;
+}
+
+const VALID_CAMPAIGNS = discoverCampaigns();
 
 if (helpFlag) {
   console.log(`
 TTRPG GM App — Session Importer
 ────────────────────────────────
-Import existing session blog posts into the app.
+Import existing session recaps and/or state files into the app.
 
-Single file:
+Single file (recap only):
   node import-sessions.js --campaign ose.lolth-conspiracy --file "path/to/session1.md"
   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "The Village of Hommlet"
 
-Bulk import a folder (all .md and .txt files):
+Recap + state (marks session as ended):
+  node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --state "session1-state.md"
+
+State only (no recap):
+  node import-sessions.js --campaign ose.lolth-conspiracy --state "session1-state.md" --title "Session 1"
+
+Bulk import a folder (all .md and .txt files as recaps, no state):
   node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-ose-sessions/"
 
 List current sessions in the database:
   node import-sessions.js --list
 
-Campaign IDs: ${VALID_CAMPAIGNS.join(', ')}
+Available campaigns: ${VALID_CAMPAIGNS.length > 0 ? VALID_CAMPAIGNS.join(', ') : '(none found — check server/rulesets/ directory)'}
 `);
   process.exit(0);
 }
@@ -86,19 +110,21 @@ function saveDb() {
 // Ensure tables exist
 db.run(`
   CREATE TABLE IF NOT EXISTS sessions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    campaign_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    campaign_id   TEXT NOT NULL,
+    title         TEXT NOT NULL,
+    context_files TEXT NOT NULL DEFAULT '[]',
+    ended_at      TEXT,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
   )
 `);
 db.run(`
   CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id INTEGER NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
+    role       TEXT NOT NULL,
+    content    TEXT NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY (session_id) REFERENCES sessions(id)
   )
@@ -128,41 +154,80 @@ function dbInsert(sql, params = []) {
   return dbGet('SELECT last_insert_rowid() as id').id;
 }
 
+function saveSessionStateFile(campaignId, stateContent) {
+  const [rulesetId, campId] = campaignId.split('.');
+  const campaignPath = join(__dirname, 'server', 'rulesets', rulesetId, 'campaigns', campId);
+  const statePath    = join(campaignPath, 'session-state.md');
+  const backupDir    = join(campaignPath, 'state-backups');
+  mkdirSync(backupDir, { recursive: true });
+
+  if (existsSync(statePath)) {
+    const date = new Date().toISOString().slice(0, 10);
+    const backupPath = join(backupDir, `session-state-${date}.md`);
+    copyFileSync(statePath, backupPath);
+    console.log(`  → Backed up existing state to state-backups/session-state-${date}.md`);
+  }
+
+  writeFileSync(statePath, stateContent, 'utf-8');
+  console.log(`  → Wrote session-state.md`);
+}
+
 function titleFromFilename(filename) {
   return basename(filename, extname(filename))
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
-function importFile(campaign, file, title) {
-  if (!existsSync(file)) {
-    console.error(`✗ File not found: ${file}`);
+function importSession(campaign, { recapFile, stateFile, title }) {
+  if (!recapFile && !stateFile) {
+    console.error('Error: provide --file and/or --state');
     return false;
   }
 
-  const content = readFileSync(file, 'utf-8').trim();
-  if (!content) {
-    console.error(`✗ File is empty: ${file}`);
-    return false;
+  let recapContent = null;
+  if (recapFile) {
+    if (!existsSync(recapFile)) { console.error(`✗ File not found: ${recapFile}`); return false; }
+    recapContent = readFileSync(recapFile, 'utf-8').trim();
+    if (!recapContent) { console.error(`✗ File is empty: ${recapFile}`); return false; }
   }
 
-  const resolvedTitle = title || titleFromFilename(file);
+  let stateContent = null;
+  if (stateFile) {
+    if (!existsSync(stateFile)) { console.error(`✗ State file not found: ${stateFile}`); return false; }
+    stateContent = readFileSync(stateFile, 'utf-8').trim();
+    if (!stateContent) { console.error(`✗ State file is empty: ${stateFile}`); return false; }
+  }
+
+  const resolvedTitle = title || (recapFile ? titleFromFilename(recapFile) : stateFile ? titleFromFilename(stateFile) : 'Imported Session');
   const now = new Date().toISOString();
+  const endedAt = stateContent ? now : null;
 
-  // Create the session
   const sessionId = dbInsert(
-    'INSERT INTO sessions (campaign_id, title, created_at, updated_at) VALUES (?, ?, ?, ?)',
-    [campaign, resolvedTitle, now, now]
+    'INSERT INTO sessions (campaign_id, title, ended_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+    [campaign, resolvedTitle, endedAt, now, now]
   );
 
-  // Insert as 'archive' role — rendered specially in the UI
-  dbInsert(
-    'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-    [sessionId, 'archive', content, now]
-  );
+  if (recapContent) {
+    dbInsert(
+      'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+      [sessionId, 'archive', recapContent, now]
+    );
+  }
+
+  if (stateContent) {
+    dbInsert(
+      'INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+      [sessionId, 'state', stateContent, now]
+    );
+    saveSessionStateFile(campaign, stateContent);
+  }
 
   saveDb();
-  console.log(`✓ Imported "${resolvedTitle}" → ${CAMPAIGN_NAMES[campaign]} (session id: ${sessionId})`);
+
+  const parts = [];
+  if (recapContent) parts.push('recap');
+  if (stateContent) parts.push('state');
+  console.log(`✓ Imported "${resolvedTitle}" [${parts.join(' + ')}] → ${campaign} (session id: ${sessionId})`);
   return true;
 }
 
@@ -176,11 +241,12 @@ if (listFlag) {
     let lastCampaign = null;
     for (const s of sessions) {
       if (s.campaign_id !== lastCampaign) {
-        console.log(`\n${CAMPAIGN_NAMES[s.campaign_id] || s.campaign_id}`);
+        console.log(`\n${s.campaign_id}`);
         lastCampaign = s.campaign_id;
       }
       const msgCount = dbGet('SELECT COUNT(*) as count FROM messages WHERE session_id = ?', [s.id]);
-      console.log(`  [${s.id}] ${s.title}  (${msgCount.count} messages)`);
+      const ended = s.ended_at ? ' [ended]' : '';
+      console.log(`  [${s.id}] ${s.title}${ended}  (${msgCount.count} messages)`);
     }
     console.log('');
   }
@@ -192,18 +258,22 @@ if (!campaignId) {
   console.error('Error: --campaign is required. Use --help for usage.');
   process.exit(1);
 }
-if (!VALID_CAMPAIGNS.includes(campaignId)) {
+if (VALID_CAMPAIGNS.length > 0 && !VALID_CAMPAIGNS.includes(campaignId)) {
   console.error(`Error: unknown campaign "${campaignId}". Valid options: ${VALID_CAMPAIGNS.join(', ')}`);
   process.exit(1);
 }
 
-// Single file import
-if (filePath) {
-  const ok = importFile(campaignId, filePath, titleArg);
+// Single file import (recap and/or state)
+if (filePath || statePath) {
+  if (dirPath) {
+    console.error('Error: --dir cannot be combined with --file or --state.');
+    process.exit(1);
+  }
+  const ok = importSession(campaignId, { recapFile: filePath, stateFile: statePath, title: titleArg });
   process.exit(ok ? 0 : 1);
 }
 
-// Bulk directory import
+// Bulk directory import (recaps only)
 if (dirPath) {
   if (!existsSync(dirPath)) {
     console.error(`Error: directory not found: ${dirPath}`);
@@ -218,10 +288,10 @@ if (dirPath) {
     process.exit(1);
   }
 
-  console.log(`Importing ${files.length} file(s) into ${CAMPAIGN_NAMES[campaignId]}...\n`);
+  console.log(`Importing ${files.length} file(s) into ${campaignId}...\n`);
   let ok = 0;
   for (const file of files) {
-    if (importFile(campaignId, join(dirPath, file), null)) ok++;
+    if (importSession(campaignId, { recapFile: join(dirPath, file), title: null })) ok++;
   }
   console.log(`\nDone: ${ok}/${files.length} imported.`);
   process.exit(ok === files.length ? 0 : 1);
