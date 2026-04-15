@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import initSqlJs from 'sql.js';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
+import { runMigration, parseCampaignId, buildCampaignId } from './migrations/001-restructure-campaigns.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -69,16 +70,70 @@ try { db.run(`ALTER TABLE sessions ADD COLUMN context_files TEXT NOT NULL DEFAUL
 try { db.run(`ALTER TABLE sessions ADD COLUMN ended_at TEXT`); } catch {}
 saveDb();
 
-// ── Campaigns ─────────────────────────────────────────────────────────────────
+// Run migrations
+runMigration(db);
+
+// ── Rule Sets and Campaigns ────────────────────────────────────────────────────
+const RULESETS = {
+  ose: {
+    id: 'ose',
+    name: 'Old-School Essentials',
+    description: 'Classic D&D rules',
+    icon: '⚔️',
+    color: '#c0392b'
+  },
+  masks: {
+    id: 'masks',
+    name: 'Masks: A New Generation', 
+    description: 'Superhero teen drama',
+    icon: '🦸',
+    color: '#8e44ad'
+  },
+  dragonbane: {
+    id: 'dragonbane',
+    name: 'Dragonbane',
+    description: 'Swedish fantasy RPG',
+    icon: '🐉',
+    color: '#16a085'
+  },
+  'ironsworn-badlands': {
+    id: 'ironsworn-badlands',
+    name: 'Ironsworn: Badlands', 
+    description: 'Solo iron age western',
+    icon: '🤠',
+    color: '#d35400'
+  }
+};
+
 const CAMPAIGNS = {
-  ose:        { id: 'ose',        name: 'OSE Advanced Fantasy',    subtitle: 'The Lolth Conspiracy',  icon: '⚔️',  color: '#c0392b' },
-  masks:      { id: 'masks',      name: 'Masks: A New Generation', subtitle: 'Superhero Drama',        icon: '🦸',  color: '#8e44ad' },
-  dragonbane: { id: 'dragonbane', name: 'Dragonbane',              subtitle: 'Mythic Fantasy',         icon: '🐉',  color: '#16a085' },
-  ironsworn:  { id: 'ironsworn',  name: 'Ironsworn: Badlands',     subtitle: "Jake Powell's Journey",  icon: '🤠',  color: '#d35400' },
+  'ose.lolth-conspiracy': {
+    id: 'lolth-conspiracy',
+    rulesetId: 'ose',
+    name: 'The Lolth Conspiracy',
+    description: 'Dark elf infiltration'
+  },
+  'masks.halcyon-city': {
+    id: 'halcyon-city',
+    rulesetId: 'masks', 
+    name: 'Halcyon City Heroes',
+    description: 'Superhero team adventures'
+  },
+  'dragonbane.mercy-row': {
+    id: 'mercy-row',
+    rulesetId: 'dragonbane',
+    name: 'Mercy Row',
+    description: 'Urban fantasy campaign'
+  },
+  'ironsworn-badlands.jake-powell': {
+    id: 'jake-powell',
+    rulesetId: 'ironsworn-badlands',
+    name: "Jake Powell's Journey", 
+    description: 'Solo hero adventure'
+  }
 };
 
 // ── File helpers ──────────────────────────────────────────────────────────────
-const CAMPAIGNS_DIR = join(__dirname, 'campaigns');
+const RULESETS_DIR = join(__dirname, 'rulesets');
 
 function labelFromFilename(filename) {
   return basename(filename, extname(filename))
@@ -87,21 +142,56 @@ function labelFromFilename(filename) {
 }
 
 function listFolder(campaignId, subfolder) {
-  const dir = join(CAMPAIGNS_DIR, campaignId, subfolder);
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter(f => ['.md', '.txt'].includes(extname(f).toLowerCase()))
-    .sort()
-    .map(f => ({ path: `${subfolder}/${f}`, label: labelFromFilename(f) }));
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  
+  // Check campaign-specific folder first
+  const campaignDir = join(RULESETS_DIR, rulesetId, 'campaigns', campId, subfolder);
+  const campaignFiles = existsSync(campaignDir) 
+    ? readdirSync(campaignDir)
+        .filter(f => ['.md', '.txt'].includes(extname(f).toLowerCase()))
+        .map(f => ({ path: `${subfolder}/${f}`, label: `[Campaign] ${labelFromFilename(f)}` }))
+    : [];
+  
+  // Check ruleset-level folder  
+  const rulesetDir = join(RULESETS_DIR, rulesetId, subfolder);
+  const rulesetFiles = existsSync(rulesetDir)
+    ? readdirSync(rulesetDir)
+        .filter(f => ['.md', '.txt'].includes(extname(f).toLowerCase()))
+        .map(f => ({ path: `shared/${subfolder}/${f}`, label: `[Shared] ${labelFromFilename(f)}` }))
+    : [];
+    
+  return [...campaignFiles, ...rulesetFiles].sort((a, b) => a.label.localeCompare(b.label));
 }
 
+// Read file with cascade: campaign-specific first, then ruleset-shared
 function readCampaignFile(campaignId, relPath) {
-  const full = join(CAMPAIGNS_DIR, campaignId, relPath);
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  
+  // Handle shared paths (prefixed with 'shared/')
+  if (relPath.startsWith('shared/')) {
+    const sharedPath = relPath.replace('shared/', '');
+    const full = join(RULESETS_DIR, rulesetId, sharedPath);
+    return existsSync(full) ? readFileSync(full, 'utf-8').trim() : null;
+  }
+  
+  // Campaign-specific path first
+  let full = join(RULESETS_DIR, rulesetId, 'campaigns', campId, relPath);
+  if (existsSync(full)) return readFileSync(full, 'utf-8').trim();
+  
+  // Fall back to ruleset level
+  full = join(RULESETS_DIR, rulesetId, relPath);
+  return existsSync(full) ? readFileSync(full, 'utf-8').trim() : null;
+}
+
+// Read ruleset-level file specifically  
+function readRulesetFile(rulesetId, relPath) {
+  const full = join(RULESETS_DIR, rulesetId, relPath);
   return existsSync(full) ? readFileSync(full, 'utf-8').trim() : null;
 }
 
 function hasSessionState(campaignId) {
-  const p = join(CAMPAIGNS_DIR, campaignId, 'session-state.md');
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  const p = join(RULESETS_DIR, rulesetId, 'campaigns', campId, 'session-state.md');
   if (!existsSync(p)) return false;
   const content = readFileSync(p, 'utf-8').trim();
   return content.length > 0 && !content.startsWith('<!--');
@@ -113,24 +203,32 @@ function loadSharedFile(filename) {
 }
 
 function loadSystemPrompt(campaignId, contextFiles = []) {
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  const campaign = CAMPAIGNS[campaignId];
+  const ruleset = RULESETS[rulesetId];
   const parts = [];
 
-  // 1. Campaign GM system prompt
-  const prompt = readCampaignFile(campaignId, 'system-prompt.md');
-  parts.push(prompt ?? `You are a GM for the ${CAMPAIGNS[campaignId]?.name ?? campaignId} campaign.`);
+  // 1. Ruleset system prompt (core rules and mechanics)
+  const rulesetPrompt = readRulesetFile(rulesetId, 'system-prompt.md');
+  parts.push(rulesetPrompt ?? `You are a GM for ${ruleset?.name ?? rulesetId} campaigns.`);
 
   // 2. Shared session state instructions (how to read/write state)
   const stateInstructions = loadSharedFile('session-state-instructions.md');
   if (stateInstructions) parts.push(`\n\n---\n${stateInstructions}`);
 
-  // 3. State template: use campaign-specific if present, otherwise fall back to universal
-  //    A campaign-specific template is treated as complete — universal template is not appended
-  const stateFields = readCampaignFile(campaignId, 'session-state-fields.md');
+  // 3. State template: use ruleset-specific if present, otherwise fall back to universal
+  const stateFields = readRulesetFile(rulesetId, 'session-state-fields.md');
   if (stateFields) {
     parts.push(`\n\n---\n${stateFields}`);
   } else {
     const stateTemplate = loadSharedFile('session-state-template.md');
     if (stateTemplate) parts.push(`\n\n---\n${stateTemplate}`);
+  }
+
+  // 4. Campaign-specific prompt (party, setting, campaign rules)
+  const campaignPrompt = readCampaignFile(campaignId, 'campaign-prompt.md');
+  if (campaignPrompt) {
+    parts.push(`\n\n---\n# ${campaign?.name ?? campId}\n\n${campaignPrompt}`);
   }
 
   // 5. Restored session state (current campaign state — highest priority)
@@ -156,7 +254,8 @@ function loadArbiterPrompt(campaignId) {
 }
 
 function saveSessionState(campaignId, stateContent) {
-  const campaignPath = join(CAMPAIGNS_DIR, campaignId);
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  const campaignPath = join(RULESETS_DIR, rulesetId, 'campaigns', campId);
   const statePath    = join(campaignPath, 'session-state.md');
   const backupDir    = join(campaignPath, 'state-backups');
   mkdirSync(backupDir, { recursive: true });
@@ -281,17 +380,44 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+
+// Return all rulesets and their campaigns
+app.get('/api/rulesets', (req, res) => {
+  const result = {};
+  for (const rulesetId of Object.keys(RULESETS)) {
+    result[rulesetId] = {
+      ...RULESETS[rulesetId],
+      campaigns: Object.values(CAMPAIGNS)
+        .filter(c => c.rulesetId === rulesetId)
+        .map(({ id, name, description }) => ({ id, name, description }))
+    };
+  }
+  res.json(result);
+});
+
+// Legacy route: return campaigns in old format for backwards compatibility
 app.get('/api/campaigns', (req, res) => {
-  res.json(Object.values(CAMPAIGNS).map(({ id, name, subtitle, icon, color }) => ({ id, name, subtitle, icon, color })));
+  const legacyFormat = Object.values(CAMPAIGNS).map(campaign => {
+    const ruleset = RULESETS[campaign.rulesetId];
+    return {
+      id: buildCampaignId(campaign.rulesetId, campaign.id),
+      name: campaign.name,
+      subtitle: campaign.description,
+      icon: ruleset?.icon || '📖',
+      color: ruleset?.color || '#666666'
+    };
+  });
+  res.json(legacyFormat);
 });
 
 app.get('/api/campaigns/:campaignId/files', (req, res) => {
   const { campaignId } = req.params;
   if (!CAMPAIGNS[campaignId]) return res.status(404).json({ error: 'Campaign not found' });
+  const { rulesetId } = parseCampaignId(campaignId);
   res.json({
     modules:    listFolder(campaignId, 'modules'),
     references: listFolder(campaignId, 'references'),
-    hasArbiter: existsSync(join(CAMPAIGNS_DIR, campaignId, 'rules-arbiter.md')),
+    hasArbiter: existsSync(join(RULESETS_DIR, rulesetId, 'rules-arbiter.md')),
     hasState:   hasSessionState(campaignId),
   });
 });

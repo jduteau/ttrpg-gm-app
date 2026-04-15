@@ -13,18 +13,31 @@ ttrpg-gm-app/
 │   ├── arbiter-prompt.md               # Shared rules arbiter persona
 │   ├── session-state-instructions.md   # Shared GM instructions for reading/writing state
 │   ├── session-state-template.md       # Universal session state template (fallback)
-│   └── campaigns/
+│   ├── migrations/                     # Database migration scripts
+│   └── rulesets/
 │       ├── ose/
-│       │   ├── system-prompt.md        # GM persona, rules, party stats
+│       │   ├── system-prompt.md        # Core OSE rules and mechanics
 │       │   ├── rules-arbiter.md        # OSE rules reference for arbiter
-│       │   ├── session-state-fields.md # Campaign-specific state template (overrides universal)
-│       │   ├── session-state.md        # Current campaign state (auto-managed)
-│       │   ├── state-backups/          # Dated state snapshots
-│       │   ├── modules/                # Module content files (.md)
-│       │   └── references/             # Reference files (.md) — party, monsters, tables
-│       ├── masks/                      # Same structure
-│       ├── dragonbane/                 # Same structure
-│       └── ironsworn/                  # Same structure
+│       │   ├── session-state-fields.md # OSE-specific state template
+│       │   ├── modules/                # Shared OSE modules (.md)
+│       │   ├── references/             # Shared OSE references (.md)
+│       │   └── campaigns/
+│       │       └── lolth-conspiracy/
+│       │           ├── campaign-prompt.md    # Party, setting, house rules
+│       │           ├── session-state.md      # Current campaign state
+│       │           ├── state-backups/        # Dated state snapshots
+│       │           ├── modules/              # Campaign-specific modules
+│       │           └── references/           # Campaign-specific references
+│       ├── masks/
+│       │   ├── system-prompt.md        # Core Masks rules
+│       │   ├── rules-arbiter.md        # Masks rules reference
+│       │   ├── session-state-fields.md # Masks-specific state template
+│       │   └── campaigns/
+│       │       └── halcyon-city/
+│       │           ├── campaign-prompt.md    # Team details, setting
+│       │           └── session-state.md      # Current campaign state
+│       ├── dragonbane/                 # Similar structure
+│       └── ironsworn-badlands/         # Similar structure
 ├── client/
 │   ├── index.html
 │   ├── vite.config.js                  # Proxies /api → localhost:3001
@@ -103,7 +116,7 @@ Managed by `server/index.js` on startup. Uses sql.js with manual save-to-disk af
 ```sql
 sessions (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  campaign_id   TEXT NOT NULL,           -- 'ose' | 'masks' | 'dragonbane' | 'ironsworn'
+  campaign_id   TEXT NOT NULL,           -- Composite ID: 'ose.lolth-conspiracy' | 'masks.halcyon-city' | etc.
   title         TEXT NOT NULL,
   context_files TEXT NOT NULL DEFAULT '[]',  -- JSON array of relative file paths
   ended_at      TEXT,                    -- ISO timestamp, null if session active
@@ -138,10 +151,11 @@ All routes are in `server/index.js`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/campaigns` | List all campaigns |
-| GET | `/api/campaigns/:id/files` | List modules, references, hasArbiter, hasState |
-| GET | `/api/campaigns/:id/sessions` | List sessions (newest first) |
-| POST | `/api/campaigns/:id/sessions` | Create session `{title?, context_files[]}` |
+| GET | `/api/rulesets` | List all rulesets with their campaigns |
+| GET | `/api/campaigns` | List all campaigns (legacy compatibility) |
+| GET | `/api/campaigns/:campaignId/files` | List modules, references, hasArbiter, hasState |
+| GET | `/api/campaigns/:campaignId/sessions` | List sessions (newest first) |
+| POST | `/api/campaigns/:campaignId/sessions` | Create session `{title?, context_files[]}` |
 | GET | `/api/sessions/:id/messages` | All messages for a session |
 | DELETE | `/api/sessions/:id` | Delete session and messages |
 | POST | `/api/sessions/:id/chat` | Send message → SSE stream |
@@ -165,17 +179,18 @@ All routes are in `server/index.js`.
 
 Every API call assembles the system prompt in this order:
 
-1. `campaigns/{id}/system-prompt.md` — GM persona, rules, setting
-2. `session-state-instructions.md` — shared: how to read/write state
-3. `campaigns/{id}/session-state-fields.md` if present, otherwise `session-state-template.md` — state format
-4. `campaigns/{id}/session-state.md` if it has real content — restored campaign state
-5. Each file in `context_files[]` — selected modules and references
+1. `rulesets/{rulesetId}/system-prompt.md` — Core rules and mechanics
+2. `session-state-instructions.md` — Shared: how to read/write state
+3. `rulesets/{rulesetId}/session-state-fields.md` if present, otherwise `session-state-template.md` — State format
+4. `rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md` — Party, setting, house rules
+5. `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` if it has real content — Restored campaign state
+6. Each file in `context_files[]` — Selected modules and references (from both shared and campaign-specific folders)
 
 ---
 
 ## Rules Arbiter
 
-When `campaigns/{id}/rules-arbiter.md` exists, the GM gets a `query_rules` tool. The tool call:
+When `rulesets/{rulesetId}/rules-arbiter.md` exists, the GM gets a `query_rules` tool. The tool call:
 
 1. Interrupts the GM stream
 2. Makes a separate non-streaming Anthropic call with `arbiter-prompt.md` + `rules-arbiter.md`
@@ -188,8 +203,8 @@ Tool use and tool results are saved as separate DB rows (`tool_use` / `tool_resu
 
 ## Session State
 
-- `session-state.md` — current state, read at every session start, overwritten on End Session
-- `state-backups/session-state-YYYY-MM-DD.md` — automatic dated backup before overwrite
+- `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` — Current state, read at every session start, overwritten on End Session
+- `rulesets/{rulesetId}/campaigns/{campaignId}/state-backups/session-state-YYYY-MM-DD.md` — Automatic dated backup before overwrite
 - State is detected as "real" only if the file exists, is non-empty, and doesn't start with `<!--`
 
 End Session flow:
@@ -202,26 +217,40 @@ End Session flow:
 
 ---
 
-## Campaigns
+## Rulesets and Campaigns
 
-Defined in `CAMPAIGNS` object in `server/index.js`:
+Defined in `RULESETS` and `CAMPAIGNS` objects in `server/index.js`:
 
 ```js
+const RULESETS = {
+  ose: { id: 'ose', name: 'Old-School Essentials', description: 'Classic D&D rules', icon: '⚔️', color: '#c0392b' },
+  masks: { id: 'masks', name: 'Masks: A New Generation', description: 'Superhero teen drama', icon: '🦸', color: '#8e44ad' },
+  dragonbane: { id: 'dragonbane', name: 'Dragonbane', description: 'Swedish fantasy RPG', icon: '🐉', color: '#16a085' },
+  'ironsworn-badlands': { id: 'ironsworn-badlands', name: 'Ironsworn: Badlands', description: 'Solo iron age western', icon: '🤠', color: '#d35400' }
+};
+
 const CAMPAIGNS = {
-  ose:        { id, name, subtitle, icon: '⚔️',  color: '#c0392b' },
-  masks:      { id, name, subtitle, icon: '🦸',  color: '#8e44ad' },
-  dragonbane: { id, name, subtitle, icon: '🐉',  color: '#16a085' },
-  ironsworn:  { id, name, subtitle, icon: '🤠',  color: '#d35400' },
+  'ose.lolth-conspiracy': { id: 'lolth-conspiracy', rulesetId: 'ose', name: 'The Lolth Conspiracy', description: 'Dark elf infiltration' },
+  'masks.halcyon-city': { id: 'halcyon-city', rulesetId: 'masks', name: 'Halcyon City Heroes', description: 'Superhero team adventures' },
+  'dragonbane.mercy-row': { id: 'mercy-row', rulesetId: 'dragonbane', name: 'Mercy Row', description: 'Urban fantasy campaign' },
+  'ironsworn-badlands.jake-powell': { id: 'jake-powell', rulesetId: 'ironsworn-badlands', name: "Jake Powell's Journey", description: 'Solo hero adventure' }
 };
 ```
 
-Each campaign uses `--campaign-color` CSS variable throughout the UI for theming.
+Each ruleset provides core mechanics; campaigns add specific settings and parties. Ruleset colors are used for campaign theming.
 
-### Adding a campaign
+### Adding a new campaign to an existing ruleset
 
-1. Add entry to `CAMPAIGNS` in `server/index.js`
-2. Create `server/campaigns/{id}/` with `system-prompt.md`
-3. Optionally add `rules-arbiter.md`, `session-state-fields.md`, `modules/`, `references/`
+1. Add entry to `CAMPAIGNS` with composite ID format: `rulesetId.campaignId`
+2. Create `server/rulesets/{rulesetId}/campaigns/{campaignId}/` with `campaign-prompt.md`
+3. Optionally add campaign-specific `modules/`, `references/`, and `session-state.md`
+
+### Adding a new ruleset
+
+1. Add entry to `RULESETS` in `server/index.js`
+2. Create `server/rulesets/{rulesetId}/` with `system-prompt.md`
+3. Optionally add `rules-arbiter.md`, `session-state-fields.md`, shared `modules/`, `references/`
+4. Create first campaign under `campaigns/` subdirectory
 
 ---
 
@@ -261,8 +290,9 @@ Each campaign uses `--campaign-color` CSS variable throughout the UI for theming
 `import-sessions.js` — run from project root, uses server's sql.js installation.
 
 ```bash
-node import-sessions.js --campaign ose --file "session1.md" --title "Session 1"
-node import-sessions.js --campaign ose --dir "./my-sessions/"
+node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "Session 1"
+node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-sessions/"
+node import-sessions.js --campaign ironsworn-badlands.jake-powell --file "badlands-session.md"
 node import-sessions.js --list
 ```
 
@@ -278,5 +308,9 @@ Imported posts are stored as `role: 'archive'` messages and rendered as gold-bor
 - **Stream loop**: the chat endpoint uses a `while (continueLoop)` pattern to handle multiple tool use calls in a single GM response. Each loop iteration is one Anthropic API call.
 - **History reconstruction**: `buildHistory()` in the server reconstructs the full Anthropic-compatible message array from DB rows, including interleaving `tool_use` and `tool_result` content blocks in the right positions.
 - **Archive messages excluded**: `archive` and `state` role messages are skipped in `buildHistory()` — they are context for the system prompt, not conversation turns.
-- **Campaign color theming**: pass `style={{ '--campaign-color': campaign.color }}` on a container, then use `var(--campaign-color)` in CSS. Never hardcode campaign colours in CSS files.
-- **File label formatting**: `labelFromFilename()` strips leading `01-` numeric prefixes and converts hyphens/underscores to title case. Name files accordingly.
+- **Composite campaign IDs**: Campaign IDs use the format `rulesetId.campaignId` (e.g., `ose.lolth-conspiracy`). The `parseCampaignId()` helper splits these for file path construction.
+- **File cascade loading**: The system first checks campaign-specific folders, then falls back to ruleset-level shared folders for modules and references.
+- **Legacy API compatibility**: `/api/campaigns` endpoint maintains backward compatibility by converting the new structure to the old flat format for the frontend.
+- **Campaign color theming**: pass `style={{ '--campaign-color': ruleset.color }}` on a container, then use `var(--campaign-color)` in CSS. Colors come from the ruleset, not individual campaigns.
+- **File label formatting**: `labelFromFilename()` strips leading `01-` numeric prefixes and converts hyphens/underscores to title case. Campaign vs shared files are distinguished by `[Campaign]` and `[Shared]` prefixes.
+- **Database migration**: The app automatically migrates old single campaign IDs to composite format on startup via the migration system.

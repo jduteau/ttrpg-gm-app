@@ -5,11 +5,11 @@
  * Imports existing session blog posts (markdown or text files) into the app database.
  *
  * Usage:
- *   node import-sessions.js --campaign ose --file "session1.md" --title "Session 1"
- *   node import-sessions.js --campaign ose --file "session1.md"   (title inferred from filename)
- *   node import-sessions.js --campaign ironsworn --dir "./ironsworn-sessions/"  (bulk import folder)
+ *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "Session 1"
+ *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md"   (title inferred from filename)
+ *   node import-sessions.js --campaign ironsworn-badlands.jake-powell --dir "./ironsworn-sessions/"  (bulk import folder)
  *
- * Campaign IDs: ose, masks, dragonbane, ironsworn
+ * Campaign IDs: ose.lolth-conspiracy, masks.halcyon-city, dragonbane.mercy-row, ironsworn-badlands.jake-powell
  *
  * The blog post is imported as an "archive" role message — displayed differently
  * in the UI to distinguish it from live session content. You can then continue
@@ -40,12 +40,12 @@ const titleArg   = getArg('title');
 const listFlag   = hasFlag('list');
 const helpFlag   = hasFlag('help') || args.length === 0;
 
-const VALID_CAMPAIGNS = ['ose', 'masks', 'dragonbane', 'ironsworn'];
+const VALID_CAMPAIGNS = ['ose.lolth-conspiracy', 'masks.halcyon-city', 'dragonbane.mercy-row', 'ironsworn-badlands.jake-powell'];
 const CAMPAIGN_NAMES = {
-  ose: 'OSE Advanced Fantasy',
-  masks: 'Masks: A New Generation',
-  dragonbane: 'Dragonbane',
-  ironsworn: 'Ironsworn: Badlands',
+  'ose.lolth-conspiracy': 'OSE Advanced Fantasy — The Lolth Conspiracy',
+  'masks.halcyon-city': 'Masks: A New Generation — Halcyon City Heroes',
+  'dragonbane.mercy-row': 'Dragonbane — Mercy Row',
+  'ironsworn-badlands.jake-powell': 'Ironsworn: Badlands — Jake Powell\'s Journey',
 };
 
 if (helpFlag) {
@@ -55,11 +55,11 @@ TTRPG GM App — Session Importer
 Import existing session blog posts into the app.
 
 Single file:
-  node import-sessions.js --campaign ose --file "path/to/session1.md"
-  node import-sessions.js --campaign ose --file "session1.md" --title "The Village of Hommlet"
+  node import-sessions.js --campaign ose.lolth-conspiracy --file "path/to/session1.md"
+  node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "The Village of Hommlet"
 
 Bulk import a folder (all .md and .txt files):
-  node import-sessions.js --campaign ose --dir "./my-ose-sessions/"
+  node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-ose-sessions/"
 
 List current sessions in the database:
   node import-sessions.js --list
