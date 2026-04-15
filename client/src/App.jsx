@@ -86,25 +86,25 @@ export default function App() {
       />
 
       <main className="app-main">
-        <button
-          className="mobile-sidebar-toggle"
-          type="button"
-          onClick={() => setSidebarOpen(open => !open)}
-          aria-expanded={sidebarOpen}
-          aria-label={sidebarOpen ? 'Close campaign drawer' : 'Open campaign drawer'}
-        >
-          <span className="mobile-sidebar-toggle-icon">☰</span>
-          <span className="mobile-sidebar-toggle-text">Campaigns</span>
-        </button>
-
         {activeSession ? (
           <ChatWindow
             session={activeSession}
             campaign={activeCampaign}
             onSessionTitleChange={title => setActiveSession(s => ({ ...s, title }))}
+            onOpenSidebar={() => setSidebarOpen(true)}
           />
         ) : (
           <div className="empty-state">
+            <button
+              className="mobile-sidebar-toggle"
+              type="button"
+              onClick={() => setSidebarOpen(open => !open)}
+              aria-expanded={sidebarOpen}
+              aria-label={sidebarOpen ? 'Close campaign drawer' : 'Open campaign drawer'}
+            >
+              <span className="mobile-sidebar-toggle-icon">☰</span>
+              <span className="mobile-sidebar-toggle-text">Sessions</span>
+            </button>
             <div className="empty-state-inner">
               <span className="empty-icon">{activeCampaign.icon}</span>
               <h2>{activeCampaign.name}</h2>

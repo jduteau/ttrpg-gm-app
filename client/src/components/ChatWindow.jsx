@@ -152,7 +152,7 @@ function EndSessionConfirm({ onConfirm, onCancel }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function ChatWindow({ session, campaign, onSessionTitleChange }) {
+export default function ChatWindow({ session, campaign, onSessionTitleChange, onOpenSidebar }) {
   const [messages,       setMessages]       = useState([]);
   const [input,          setInput]          = useState('');
   const [streaming,      setStreaming]       = useState(false);
@@ -319,6 +319,15 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange }) 
   return (
     <div className="chat-window" style={{ '--campaign-color': campaign.color }}>
       <div className="chat-header">
+        <button
+          className="chat-sessions-toggle"
+          type="button"
+          onClick={onOpenSidebar}
+          aria-label="Open sessions drawer"
+        >
+          <span className="chat-sessions-toggle-icon">☰</span>
+          <span>Sessions</span>
+        </button>
         <span className="chat-session-title">
           {sessionTitle}
           {sessionEnded && <span className="session-ended-badge">Ended</span>}
