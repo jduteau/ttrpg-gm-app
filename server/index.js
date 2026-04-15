@@ -93,6 +93,56 @@ function buildCampaignId(rulesetId, campaignId) {
   return `${rulesetId}.${campaignId}`;
 }
 
+// ── Message Trimming ─────────────────────────────────────────────────────────
+/**
+ * Trim conversation messages from ended sessions to keep database lean.
+ * Keeps only 'archive' and 'state' messages for continuity, removes conversational flow.
+ * 
+ * @param {number|null} sessionId - Specific session ID to trim, or null to trim all ended sessions
+ */
+function trimEndedSessionMessages(sessionId = null) {
+  const condition = sessionId 
+    ? 'WHERE s.id = ? AND s.ended_at IS NOT NULL'
+    : 'WHERE s.ended_at IS NOT NULL';
+  const params = sessionId ? [sessionId] : [];
+  
+  // Find sessions to trim
+  const sessionsToTrim = dbAll(`
+    SELECT s.id, s.title, COUNT(m.id) as total_messages,
+           SUM(CASE WHEN m.role IN ('archive', 'state') THEN 1 ELSE 0 END) as keep_messages
+    FROM sessions s 
+    LEFT JOIN messages m ON s.id = m.session_id 
+    ${condition}
+    GROUP BY s.id
+    HAVING total_messages > keep_messages
+  `, params);
+  
+  if (sessionsToTrim.length === 0) {
+    console.log('No ended sessions need message trimming');
+    return;
+  }
+  
+  // Trim messages for each session
+  for (const session of sessionsToTrim) {
+    const deletedCount = dbAll(`
+      SELECT COUNT(*) as count FROM messages 
+      WHERE session_id = ? AND role NOT IN ('archive', 'state')
+    `, [session.id])[0].count;
+    
+    if (deletedCount > 0) {
+      dbRun(`
+        DELETE FROM messages 
+        WHERE session_id = ? AND role NOT IN ('archive', 'state')
+      `, [session.id]);
+      
+      console.log(`Trimmed ${deletedCount} messages from ended session: ${session.title}`);
+    }
+  }
+  
+  const totalTrimmed = sessionsToTrim.reduce((sum, s) => sum + (s.total_messages - s.keep_messages), 0);
+  console.log(`Message trimming completed: ${totalTrimmed} messages removed from ${sessionsToTrim.length} sessions`);
+}
+
 // ── Rule Sets and Campaigns ────────────────────────────────────────────────────
 const RULESETS = {
   ose: {
@@ -478,6 +528,17 @@ app.delete('/api/sessions/:sessionId', (req, res) => {
   res.json({ success: true });
 });
 
+// Cleanup endpoint: trim messages from all ended sessions
+app.post('/api/sessions/cleanup', (req, res) => {
+  try {
+    trimEndedSessionMessages();
+    res.json({ success: true, message: 'Ended session messages trimmed successfully' });
+  } catch (error) {
+    console.error('Error during session cleanup:', error);
+    res.status(500).json({ error: 'Cleanup failed', details: error.message });
+  }
+});
+
 // ── Chat ──────────────────────────────────────────────────────────────────────
 app.post('/api/sessions/:sessionId/chat', async (req, res) => {
   const { sessionId } = req.params;
@@ -567,6 +628,9 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
       // Mark session as ended
       dbRun('UPDATE sessions SET ended_at = ?, updated_at = ? WHERE id = ?',
         [new Date().toISOString(), new Date().toISOString(), sessionId]);
+
+      // Trim conversation messages to keep database lean
+      trimEndedSessionMessages(sessionId);
     }
 
     send({ state_done: true, content: stateContent });

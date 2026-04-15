@@ -143,6 +143,14 @@ messages (
 | `archive` | plain text | Imported session blog post |
 | `state` | plain text | End-of-session state snapshot |
 
+### Message Trimming
+
+Ended sessions automatically trim conversation messages to keep the database lean:
+- **Kept**: `archive` and `state` messages (provide continuity)
+- **Removed**: `user`, `assistant`, `tool_use`, `tool_result` messages (conversational flow)
+
+When a session ends, only archive content and final state are preserved. The next session starts fresh with the state file injected into the system prompt, maintaining full continuity.
+
 ---
 
 ## API Routes
@@ -158,6 +166,9 @@ All routes are in `server/index.js`.
 | POST | `/api/campaigns/:campaignId/sessions` | Create session `{title?, context_files[]}` |
 | GET | `/api/sessions/:id/messages` | All messages for a session |
 | DELETE | `/api/sessions/:id` | Delete session and messages |
+| POST | `/api/sessions/cleanup` | Trim messages from all ended sessions |
+| POST | `/api/sessions/:id/chat` | Send message → SSE stream |
+| POST | `/api/sessions/:id/end` | End session → SSE stream (generates + saves state) |
 | POST | `/api/sessions/:id/chat` | Send message → SSE stream |
 | POST | `/api/sessions/:id/end` | End session → SSE stream (generates + saves state) |
 
@@ -214,6 +225,7 @@ End Session flow:
 4. GM streams the state block (not saved as a normal message during streaming)
 5. On completion, state is saved to file + backup, and stored in DB as `role: 'state'`
 6. Session marked `ended_at = now`
+7. Conversation messages automatically trimmed to keep database lean
 
 ---
 

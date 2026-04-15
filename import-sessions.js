@@ -9,7 +9,7 @@
  *   node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md"   (title inferred from filename)
  *   node import-sessions.js --campaign ironsworn-badlands.jake-powell --dir "./ironsworn-sessions/"  (bulk import folder)
  *
- * Campaign IDs: ose.lolth-conspiracy, masks.halcyon-city, dragonbane.mercy-row, ironsworn-badlands.jake-powell
+ * Campaign IDs: ose.lolth-conspiracy, masks.halcyon-city, dragonbane.dragon-emperor, ironsworn-badlands.jake-powell
  *
  * The blog post is imported as an "archive" role message — displayed differently
  * in the UI to distinguish it from live session content. You can then continue
@@ -40,11 +40,11 @@ const titleArg   = getArg('title');
 const listFlag   = hasFlag('list');
 const helpFlag   = hasFlag('help') || args.length === 0;
 
-const VALID_CAMPAIGNS = ['ose.lolth-conspiracy', 'masks.halcyon-city', 'dragonbane.mercy-row', 'ironsworn-badlands.jake-powell'];
+const VALID_CAMPAIGNS = ['ose.lolth-conspiracy', 'masks.halcyon-city', 'dragonbane.dragon-emperor', 'ironsworn-badlands.jake-powell'];
 const CAMPAIGN_NAMES = {
   'ose.lolth-conspiracy': 'OSE Advanced Fantasy — The Lolth Conspiracy',
   'masks.halcyon-city': 'Masks: A New Generation — Halcyon City Heroes',
-  'dragonbane.mercy-row': 'Dragonbane — Mercy Row',
+  'dragonbane.dragon-emperor': 'Dragonbane — The Secret of the Dragon Emperor',
   'ironsworn-badlands.jake-powell': 'Ironsworn: Badlands — Jake Powell\'s Journey',
 };
 
