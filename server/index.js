@@ -6,7 +6,6 @@ import { fileURLToPath } from 'url';
 import initSqlJs from 'sql.js';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
-import { runMigration, parseCampaignId, buildCampaignId } from './migrations/001-restructure-campaigns.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -70,8 +69,29 @@ try { db.run(`ALTER TABLE sessions ADD COLUMN context_files TEXT NOT NULL DEFAUL
 try { db.run(`ALTER TABLE sessions ADD COLUMN ended_at TEXT`); } catch {}
 saveDb();
 
-// Run migrations
-runMigration(db);
+// ── Campaign ID Helpers ─────────────────────────────────────────────────────────
+/**
+ * Parse composite campaign ID
+ * @param {string} campaignId - Format: 'ruleset.campaign' 
+ * @returns {{rulesetId: string, campaignId: string}}
+ */
+function parseCampaignId(campaignId) {
+  const [rulesetId, ...campaignParts] = campaignId.split('.');
+  return {
+    rulesetId,
+    campaignId: campaignParts.join('.') // Handle campaign names with dots
+  };
+}
+
+/**
+ * Build composite campaign ID
+ * @param {string} rulesetId 
+ * @param {string} campaignId 
+ * @returns {string} - Format: 'ruleset.campaign'
+ */
+function buildCampaignId(rulesetId, campaignId) {
+  return `${rulesetId}.${campaignId}`;
+}
 
 // ── Rule Sets and Campaigns ────────────────────────────────────────────────────
 const RULESETS = {
