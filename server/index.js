@@ -123,13 +123,15 @@ function loadSystemPrompt(campaignId, contextFiles = []) {
   const stateInstructions = loadSharedFile('session-state-instructions.md');
   if (stateInstructions) parts.push(`\n\n---\n${stateInstructions}`);
 
-  // 3. Shared session state template (universal fields)
-  const stateTemplate = loadSharedFile('session-state-template.md');
-  if (stateTemplate) parts.push(`\n\n---\n${stateTemplate}`);
-
-  // 4. Campaign-specific state field extensions
+  // 3. State template: use campaign-specific if present, otherwise fall back to universal
+  //    A campaign-specific template is treated as complete — universal template is not appended
   const stateFields = readCampaignFile(campaignId, 'session-state-fields.md');
-  if (stateFields) parts.push(`\n\n---\n${stateFields}`);
+  if (stateFields) {
+    parts.push(`\n\n---\n${stateFields}`);
+  } else {
+    const stateTemplate = loadSharedFile('session-state-template.md');
+    if (stateTemplate) parts.push(`\n\n---\n${stateTemplate}`);
+  }
 
   // 5. Restored session state (current campaign state — highest priority)
   if (hasSessionState(campaignId)) {
