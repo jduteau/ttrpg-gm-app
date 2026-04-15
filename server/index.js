@@ -144,63 +144,167 @@ function trimEndedSessionMessages(sessionId = null) {
 }
 
 // ── Rule Sets and Campaigns ────────────────────────────────────────────────────
-const RULESETS = {
-  ose: {
-    id: 'ose',
-    name: 'Old-School Essentials',
-    description: 'Classic D&D rules',
-    icon: '⚔️',
-    color: '#c0392b'
-  },
-  masks: {
-    id: 'masks',
-    name: 'Masks: A New Generation', 
-    description: 'Superhero teen drama',
-    icon: '🦸',
-    color: '#8e44ad'
-  },
-  dragonbane: {
-    id: 'dragonbane',
-    name: 'Dragonbane',
-    description: 'Swedish fantasy RPG',
-    icon: '🐉',
-    color: '#16a085'
-  },
-  'ironsworn-badlands': {
-    id: 'ironsworn-badlands',
-    name: 'Ironsworn: Badlands', 
-    description: 'Solo iron age western',
-    icon: '🤠',
-    color: '#d35400'
-  }
+
+// Default visual attributes for rulesets
+const RULESET_DEFAULTS = {
+  'ose': { icon: '⚔️', color: '#c0392b' },
+  'masks': { icon: '🦸', color: '#8e44ad' },
+  'dragonbane': { icon: '🐉', color: '#16a085' },
+  'ironsworn-badlands': { icon: '🤠', color: '#d35400' },
+  // Add more defaults here as needed
 };
 
-const CAMPAIGNS = {
-  'ose.lolth-conspiracy': {
-    id: 'lolth-conspiracy',
-    rulesetId: 'ose',
-    name: 'The Lolth Conspiracy',
-    description: 'Old style campaign with a twist of drow intrigue'
-  },
-  'masks.halcyon-city': {
-    id: 'halcyon-city',
-    rulesetId: 'masks', 
-    name: 'Halcyon City Heroes',
-    description: 'Superhero team adventures'
-  },
-  'dragonbane.dragon-emperor': {
-    id: 'dragon-emperor',
-    rulesetId: 'dragonbane',
-    name: 'The Secret of the Dragon Emperor',
-    description: 'A quest to uncover the truth behind the legendary Dragon Emperor'
-  },
-  'ironsworn-badlands.jake-powell': {
-    id: 'jake-powell',
-    rulesetId: 'ironsworn-badlands',
-    name: "Jake Powell's Journey", 
-    description: 'Solo hero adventure'
+// Cache for scanned rulesets and campaigns
+let _rulesetsCache = null;
+let _campaignsCache = null;
+
+// Extract title from markdown file's first header
+function extractTitleFromMarkdown(content) {
+  if (!content) return null;
+  const match = content.match(/^#\s+(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
+// Convert directory name to display name
+function dirToDisplayName(dirName) {
+  return dirName
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Scan rulesets directory and build RULESETS object
+function scanRulesets() {
+  if (_rulesetsCache) return _rulesetsCache;
+  
+  const rulesets = {};
+  
+  try {
+    const rulesetDirs = readdirSync(RULESETS_DIR, { withFileTypes: true })
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name);
+    
+    for (const rulesetId of rulesetDirs) {
+      const rulesetPath = join(RULESETS_DIR, rulesetId);
+      
+      // Try to extract name from system-prompt.md
+      let name = null;
+      let description = 'Tabletop RPG system';
+      
+      const systemPromptPath = join(rulesetPath, 'system-prompt.md');
+      if (existsSync(systemPromptPath)) {
+        const content = readFileSync(systemPromptPath, 'utf-8');
+        name = extractTitleFromMarkdown(content);
+        
+        // Extract description from first paragraph if available
+        const lines = content.split('\n').filter(line => line.trim());
+        const descLine = lines.find(line => 
+          !line.startsWith('#') && 
+          !line.startsWith('---') && 
+          line.trim().length > 10
+        );
+        if (descLine) {
+          description = descLine.trim();
+        }
+      }
+      
+      // Fallback to directory name if no title found
+      if (!name) {
+        name = dirToDisplayName(rulesetId);
+      }
+      
+      // Get visual attributes from defaults or generate fallbacks
+      const defaults = RULESET_DEFAULTS[rulesetId] || { icon: '🎲', color: '#34495e' };
+      
+      rulesets[rulesetId] = {
+        id: rulesetId,
+        name,
+        description,
+        icon: defaults.icon,
+        color: defaults.color
+      };
+    }
+  } catch (error) {
+    console.error('Error scanning rulesets:', error);
   }
-};
+  
+  _rulesetsCache = rulesets;
+  return rulesets;
+}
+
+// Scan campaigns across all rulesets and build CAMPAIGNS object
+function scanCampaigns() {
+  if (_campaignsCache) return _campaignsCache;
+  
+  const campaigns = {};
+  const rulesets = scanRulesets();
+  
+  try {
+    for (const rulesetId of Object.keys(rulesets)) {
+      const campaignsDir = join(RULESETS_DIR, rulesetId, 'campaigns');
+      
+      if (!existsSync(campaignsDir)) continue;
+      
+      const campaignDirs = readdirSync(campaignsDir, { withFileTypes: true })
+        .filter(entry => entry.isDirectory())
+        .map(entry => entry.name);
+      
+      for (const campaignId of campaignDirs) {
+        const compositeId = `${rulesetId}.${campaignId}`;
+        
+        // Try to extract name and description from campaign-prompt.md
+        let name = null;
+        let description = 'Campaign setting';
+        
+        const campaignPromptPath = join(campaignsDir, campaignId, 'campaign-prompt.md');
+        if (existsSync(campaignPromptPath)) {
+          const content = readFileSync(campaignPromptPath, 'utf-8');
+          name = extractTitleFromMarkdown(content);
+          
+          // Extract description from overview section or first paragraph
+          const overviewMatch = content.match(/##\s+(?:Campaign\s+)?Overview\s*\n\n(.+?)(?:\n\n|\n##|$)/s);
+          if (overviewMatch) {
+            description = overviewMatch[1].trim().replace(/\n/g, ' ');
+          }
+        }
+        
+        // Fallback to directory name if no title found
+        if (!name) {
+          name = dirToDisplayName(campaignId);
+        }
+        
+        campaigns[compositeId] = {
+          id: campaignId,
+          rulesetId,
+          name,
+          description
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error scanning campaigns:', error);
+  }
+  
+  _campaignsCache = campaigns;
+  return campaigns;
+}
+
+// Dynamic getters that replace the old static objects
+function getRulesets() {
+  return scanRulesets();
+}
+
+function getCampaigns() {
+  return scanCampaigns();
+}
+
+function getRuleset(id) {
+  return getRulesets()[id];
+}
+
+function getCampaign(id) {
+  return getCampaigns()[id];
+}
 
 // ── File helpers ──────────────────────────────────────────────────────────────
 const RULESETS_DIR = join(__dirname, 'rulesets');
@@ -274,8 +378,8 @@ function loadSharedFile(filename) {
 
 function loadSystemPrompt(campaignId, contextFiles = []) {
   const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
-  const campaign = CAMPAIGNS[campaignId];
-  const ruleset = RULESETS[rulesetId];
+  const campaign = getCampaign(campaignId);
+  const ruleset = getRuleset(rulesetId);
   const parts = [];
 
   // 1. Ruleset system prompt (core rules and mechanics)
@@ -453,11 +557,14 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
 
 // Return all rulesets and their campaigns
 app.get('/api/rulesets', (req, res) => {
+  const rulesets = getRulesets();
+  const campaigns = getCampaigns();
+  
   const result = {};
-  for (const rulesetId of Object.keys(RULESETS)) {
+  for (const rulesetId of Object.keys(rulesets)) {
     result[rulesetId] = {
-      ...RULESETS[rulesetId],
-      campaigns: Object.values(CAMPAIGNS)
+      ...rulesets[rulesetId],
+      campaigns: Object.values(campaigns)
         .filter(c => c.rulesetId === rulesetId)
         .map(({ id, name, description }) => ({ id, name, description }))
     };
@@ -467,8 +574,11 @@ app.get('/api/rulesets', (req, res) => {
 
 // Legacy route: return campaigns in old format for backwards compatibility
 app.get('/api/campaigns', (req, res) => {
-  const legacyFormat = Object.values(CAMPAIGNS).map(campaign => {
-    const ruleset = RULESETS[campaign.rulesetId];
+  const campaigns = getCampaigns();
+  const rulesets = getRulesets();
+  
+  const legacyFormat = Object.values(campaigns).map(campaign => {
+    const ruleset = rulesets[campaign.rulesetId];
     return {
       id: buildCampaignId(campaign.rulesetId, campaign.id),
       name: campaign.name,
@@ -482,7 +592,7 @@ app.get('/api/campaigns', (req, res) => {
 
 app.get('/api/campaigns/:campaignId/files', (req, res) => {
   const { campaignId } = req.params;
-  if (!CAMPAIGNS[campaignId]) return res.status(404).json({ error: 'Campaign not found' });
+  if (!getCampaign(campaignId)) return res.status(404).json({ error: 'Campaign not found' });
   const { rulesetId } = parseCampaignId(campaignId);
   res.json({
     modules:    listFolder(campaignId, 'modules'),
@@ -502,7 +612,7 @@ app.get('/api/campaigns/:campaignId/sessions', (req, res) => {
 
 app.post('/api/campaigns/:campaignId/sessions', (req, res) => {
   const { campaignId } = req.params;
-  if (!CAMPAIGNS[campaignId]) return res.status(404).json({ error: 'Campaign not found' });
+  if (!getCampaign(campaignId)) return res.status(404).json({ error: 'Campaign not found' });
   const now   = new Date().toISOString();
   const count = dbGet('SELECT COUNT(*) as count FROM sessions WHERE campaign_id = ?', [campaignId]).count;
   const title        = req.body.title || `Session ${Number(count) + 1}`;
@@ -546,12 +656,13 @@ app.post('/api/sessions/:sessionId/chat', async (req, res) => {
 
   const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);
   if (!session) return res.status(404).json({ error: 'Session not found' });
-  const campaign = CAMPAIGNS[session.campaign_id];
+  const campaign = getCampaign(session.campaign_id);
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
   const contextFiles = JSON.parse(session.context_files || '[]');
   const systemPrompt = loadSystemPrompt(session.campaign_id, contextFiles);
-  const hasArbiter   = existsSync(join(CAMPAIGNS_DIR, session.campaign_id, 'rules-arbiter.md'));
+  const { rulesetId } = parseCampaignId(session.campaign_id);
+  const hasArbiter   = existsSync(join(RULESETS_DIR, rulesetId, 'rules-arbiter.md'));
 
   dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
     [sessionId, 'user', message, new Date().toISOString()]);
@@ -581,12 +692,13 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
 
   const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);
   if (!session) return res.status(404).json({ error: 'Session not found' });
-  const campaign = CAMPAIGNS[session.campaign_id];
+  const campaign = getCampaign(session.campaign_id);
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
   const contextFiles = JSON.parse(session.context_files || '[]');
   const systemPrompt = loadSystemPrompt(session.campaign_id, contextFiles);
-  const hasArbiter   = existsSync(join(CAMPAIGNS_DIR, session.campaign_id, 'rules-arbiter.md'));
+  const { rulesetId } = parseCampaignId(session.campaign_id);
+  const hasArbiter   = existsSync(join(RULESETS_DIR, rulesetId, 'rules-arbiter.md'));
 
   // Build history without the state-save instruction
   const dbMessages = dbAll(
