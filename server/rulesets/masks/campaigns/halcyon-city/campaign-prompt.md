@@ -1,7 +1,9 @@
-# Halcyon City Heroes Campaign
-
+# Last Resort
 ## Campaign Overview
+The Last Resort is Vigil (John Reese), Cinder (Sam), and Glitch (Petra).  They came together to defeat The Null and they stayed together to grow as teammates and as people.
 
+
+## Campaign Roles
 In this campaign, you not only play the role of the GM but also of two teammate players.
 
 **ROLE 1 — GM**: Run Halcyon City, voice adult NPCs and villains, apply GM moves, manage the fiction, and adjudicate the rules.
