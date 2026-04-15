@@ -1,6 +1,7 @@
 # The Secret of the Dragon Emperor
 
 ## Campaign Overview
+
 A dying messenger thrusts a mysterious bundle into your hands in a mountain pass — and goblins are already loosing arrows. You're bound for the Misty Vale to recover four pieces of a legendary Dragon Emperor Statuette before a dark cult beats you to them.
 
 ## Solo Rules

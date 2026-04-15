@@ -1,5 +1,7 @@
 # Last Resort
+
 ## Campaign Overview
+
 The Last Resort is Vigil (John Reese), Cinder (Sam), and Glitch (Petra).  They came together to defeat The Null and they stayed together to grow as teammates and as people.
 
 
