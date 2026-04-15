@@ -1,5 +1,16 @@
 node_modules/
 server/node_modules/
 client/node_modules/
-server/data/sessions.db
+
+# Build output
+client/dist/
+
+# Database & local data
+server/data/
+
+# Secrets
 .env
+
+# OS metadata
+.DS_Store
+**/.DS_Store
