@@ -152,7 +152,7 @@ function EndSessionConfirm({ onConfirm, onCancel }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function ChatWindow({ session, campaign }) {
+export default function ChatWindow({ session, campaign, onSessionTitleChange }) {
   const [messages,       setMessages]       = useState([]);
   const [input,          setInput]          = useState('');
   const [streaming,      setStreaming]       = useState(false);
@@ -165,6 +165,7 @@ export default function ChatWindow({ session, campaign }) {
   const [reportBuffer,   setReportBuffer]   = useState('');
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [sessionEnded,   setSessionEnded]   = useState(false);
+  const [sessionTitle,   setSessionTitle]   = useState(session.title);
   const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
@@ -180,6 +181,7 @@ export default function ChatWindow({ session, campaign }) {
     setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
     setEnding(false); setStateBuffer(''); setReportBuffer('');
     setShowEndConfirm(false);
+    setSessionTitle(session.title);
   }, [session.id]);
 
   useEffect(() => {
@@ -267,6 +269,11 @@ export default function ChatWindow({ session, campaign }) {
             setDiceRollBlocks(bs => [...bs, { label: data.label, results: data.results }]);
           }
 
+          if (data.session_title) {
+            setSessionTitle(data.session_title);
+            onSessionTitleChange?.(data.session_title);
+          }
+
           if (data.report_text) {
             reportTextBuffer += data.report_text;
             setReportBuffer(reportTextBuffer);
@@ -313,7 +320,7 @@ export default function ChatWindow({ session, campaign }) {
     <div className="chat-window" style={{ '--campaign-color': campaign.color }}>
       <div className="chat-header">
         <span className="chat-session-title">
-          {session.title}
+          {sessionTitle}
           {sessionEnded && <span className="session-ended-badge">Ended</span>}
         </span>
         <div className="chat-header-actions">

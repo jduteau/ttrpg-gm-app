@@ -820,8 +820,19 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
       saveSessionState(session.campaign_id, stateContent);
       dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
         [sessionId, 'state', stateContent, new Date().toISOString()]);
-      dbRun('UPDATE sessions SET ended_at = ?, updated_at = ? WHERE id = ?',
-        [new Date().toISOString(), new Date().toISOString(), sessionId]);
+
+      // Extract episode title from the state header line
+      // Format: *Last updated: end of Session N | Episode Title*
+      const titleMatch = stateContent.match(/\*Last updated:.*?\|\s*(.+?)\s*\*/);
+      const episodeTitle = titleMatch?.[1]?.trim();
+      if (episodeTitle) {
+        dbRun('UPDATE sessions SET title = ?, ended_at = ?, updated_at = ? WHERE id = ?',
+          [episodeTitle, new Date().toISOString(), new Date().toISOString(), sessionId]);
+        send({ session_title: episodeTitle });
+      } else {
+        dbRun('UPDATE sessions SET ended_at = ?, updated_at = ? WHERE id = ?',
+          [new Date().toISOString(), new Date().toISOString(), sessionId]);
+      }
     }
 
     send({ state_done: true, content: stateContent });

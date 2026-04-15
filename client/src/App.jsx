@@ -98,7 +98,11 @@ export default function App() {
         </button>
 
         {activeSession ? (
-          <ChatWindow session={activeSession} campaign={activeCampaign} />
+          <ChatWindow
+            session={activeSession}
+            campaign={activeCampaign}
+            onSessionTitleChange={title => setActiveSession(s => ({ ...s, title }))}
+          />
         ) : (
           <div className="empty-state">
             <div className="empty-state-inner">
