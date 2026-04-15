@@ -7,8 +7,8 @@
   border-right: 1px solid var(--border-dim);
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: relative;
   z-index: 30;
@@ -98,9 +98,14 @@
   transition: all var(--transition);
 }
 
-.btn-new-session:hover {
+.btn-new-session:hover:not(:disabled) {
   background: var(--accent-gold-glow);
   border-color: var(--accent-gold);
+}
+
+.btn-new-session:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .session-list {
@@ -185,6 +190,12 @@
   background: var(--accent-danger-soft);
 }
 
+@media (hover: none) {
+  .session-delete {
+    opacity: 0.45;
+  }
+}
+
 /* Active context panel */
 .sidebar-context {
   padding: 10px 14px 12px;
@@ -248,6 +259,27 @@
 /* Ended sessions */
 .session-item.ended .session-title {
   opacity: 0.6;
+}
+
+/* In-progress sessions */
+.session-item.in-progress {
+  border-left-color: var(--campaign-color);
+}
+
+.session-item.in-progress .session-title {
+  color: var(--campaign-color);
+}
+
+.session-item.in-progress::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--campaign-color);
+  flex-shrink: 0;
+  margin-left: auto;
+  opacity: 0.75;
 }
 
 .session-ended-dot {

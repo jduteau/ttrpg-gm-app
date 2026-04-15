@@ -162,6 +162,7 @@ export default function ChatWindow({ session, campaign }) {
   const [diceRollBlocks, setDiceRollBlocks] = useState([]);
   const [ending,         setEnding]         = useState(false);
   const [stateBuffer,    setStateBuffer]    = useState('');
+  const [reportBuffer,   setReportBuffer]   = useState('');
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [sessionEnded,   setSessionEnded]   = useState(false);
   const bottomRef   = useRef(null);
@@ -177,13 +178,13 @@ export default function ChatWindow({ session, campaign }) {
       });
     setStreamBuffer(''); setStreaming(false);
     setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
-    setEnding(false); setStateBuffer('');
+    setEnding(false); setStateBuffer(''); setReportBuffer('');
     setShowEndConfirm(false);
   }, [session.id]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer]);
+  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer, reportBuffer]);
 
   // ── Send chat message ───────────────────────────────────────────────────────
   const send = async () => {
@@ -227,6 +228,7 @@ export default function ChatWindow({ session, campaign }) {
     const reader  = res.body.getReader();
     const decoder = new TextDecoder();
     let textBuffer = '';
+    let reportTextBuffer = '';
 
     while (true) {
       const { done, value } = await reader.read();
@@ -265,12 +267,17 @@ export default function ChatWindow({ session, campaign }) {
             setDiceRollBlocks(bs => [...bs, { label: data.label, results: data.results }]);
           }
 
+          if (data.report_text) {
+            reportTextBuffer += data.report_text;
+            setReportBuffer(reportTextBuffer);
+          }
+
           if (data.done) {
             if (isEnd) {
-              // Reload to get the saved state message
+              // Reload to get saved state + report messages
               const fresh = await fetch(`/api/sessions/${session.id}/messages`).then(r => r.json());
               setMessages(mergeMessages(fresh));
-              setStateBuffer('');
+              setStateBuffer(''); setReportBuffer('');
               setEnding(false);
               setSessionEnded(true);
             } else {
@@ -356,7 +363,15 @@ export default function ChatWindow({ session, campaign }) {
         )}
 
         {ending && (
-          <StateBlock content={stateBuffer || '…'} isStreaming={true} />
+          <StateBlock content={stateBuffer || '…'} isStreaming={!reportBuffer} />
+        )}
+        {ending && reportBuffer && (
+          <div className="message message-archive">
+            <div className="message-archive-header">
+              <span className="archive-rule" /><span className="archive-label">📜 Session Report</span><span className="archive-rule" />
+            </div>
+            <div className="message-content">{reportBuffer}<span className="cursor" /></div>
+          </div>
         )}
 
         <div ref={bottomRef} />

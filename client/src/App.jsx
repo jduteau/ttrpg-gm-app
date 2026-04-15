@@ -12,6 +12,7 @@ export default function App() {
   const [showSelector, setShowSelector] = useState(true);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
 
   useEffect(() => {
     fetch('/api/campaigns')
@@ -47,6 +48,7 @@ export default function App() {
     setShowSelector(true);
     setActiveSession(null);
     setSidebarOpen(false);
+    setHasActiveSession(false);
   };
 
   const handleSelectSession = (session) => {
@@ -78,6 +80,7 @@ export default function App() {
         onSelectSession={handleSelectSession}
         onNewSession={handleNewSession}
         onChangeCampaign={handleChangeCampaign}
+        onHasActiveChange={setHasActiveSession}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -102,7 +105,7 @@ export default function App() {
               <span className="empty-icon">{activeCampaign.icon}</span>
               <h2>{activeCampaign.name}</h2>
               <p>{activeCampaign.subtitle}</p>
-              <button className="btn-primary" onClick={handleNewSession}>
+              <button className="btn-primary" onClick={handleNewSession} disabled={hasActiveSession} title={hasActiveSession ? 'End the current session before starting a new one' : undefined}>
                 Begin New Session
               </button>
             </div>

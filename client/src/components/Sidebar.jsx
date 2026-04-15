@@ -25,6 +25,7 @@ export default function Sidebar({
   onSelectSession,
   onNewSession,
   onChangeCampaign,
+  onHasActiveChange,
   isOpen,
   onClose,
 }) {
@@ -34,7 +35,10 @@ export default function Sidebar({
   const fetchSessions = useCallback(() => {
     fetch(`/api/campaigns/${campaign.id}/sessions`)
       .then(r => r.json())
-      .then(setSessions)
+      .then(data => {
+        setSessions(data);
+        onHasActiveChange?.(data.some(s => !s.ended_at));
+      })
       .catch(console.error);
   }, [campaign.id]);
 
@@ -95,7 +99,12 @@ export default function Sidebar({
 
       <div className="sidebar-sessions-header">
         <span>Sessions</span>
-        <button className="btn-new-session" onClick={onNewSession}>+ New</button>
+        <button
+          className="btn-new-session"
+          onClick={onNewSession}
+          disabled={sessions.some(s => !s.ended_at)}
+          title={sessions.some(s => !s.ended_at) ? 'End the current session before starting a new one' : undefined}
+        >+ New</button>
       </div>
 
       <div className="session-list">
@@ -105,7 +114,7 @@ export default function Sidebar({
         {sessions.map(session => (
           <div
             key={session.id}
-            className={`session-item ${activeSession?.id === session.id ? 'active' : ''} ${deletingId === session.id ? 'deleting' : ''}`}
+            className={`session-item ${activeSession?.id === session.id ? 'active' : ''} ${deletingId === session.id ? 'deleting' : ''} ${!session.ended_at ? 'in-progress' : 'ended'}`}
             onClick={() => onSelectSession(session)}
           >
             <div className="session-item-body">

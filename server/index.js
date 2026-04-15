@@ -788,17 +788,11 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
   const { rulesetId } = parseCampaignId(session.campaign_id);
   const hasArbiter   = existsSync(join(RULESETS_DIR, rulesetId, 'rules-arbiter.md'));
 
-  // Build history without the state-save instruction
+  // Build base history once; fork separate arrays for state and report
   const dbMessages = dbAll(
     'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC', [sessionId]
   );
-  const history = buildHistory(dbMessages);
-
-  // Add the end-of-session instruction as a user turn
-  history.push({
-    role: 'user',
-    content: 'The session is now ending. Please produce the full session state snapshot as instructed in your system prompt. Output only the state block — no other commentary.',
-  });
+  const baseHistory = buildHistory(dbMessages);
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -807,33 +801,66 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
   function send(data) { res.write(`data: ${JSON.stringify(data)}\n\n`); }
 
   try {
+    // ── Phase 1: State snapshot ──────────────────────────────────────────────
     send({ state_start: true });
 
-    // Stream the state output but don't save it as a normal message
+    const stateHistory = [...baseHistory, {
+      role: 'user',
+      content: 'The session is now ending. Please produce the full session state snapshot as instructed in your system prompt. Output only the state block — no other commentary.',
+    }];
+
     const stateContent = await runChatStream(res, {
-      systemPrompt, history, hasArbiter,
+      systemPrompt, history: stateHistory, hasArbiter,
       campaignId: session.campaign_id,
       sessionId,
       saveAssistantMessages: false,
     });
 
     if (stateContent) {
-      // Save state to file with backup
       saveSessionState(session.campaign_id, stateContent);
-
-      // Save as a special 'state' message in the session for the UI
       dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
         [sessionId, 'state', stateContent, new Date().toISOString()]);
-
-      // Mark session as ended
       dbRun('UPDATE sessions SET ended_at = ?, updated_at = ? WHERE id = ?',
         [new Date().toISOString(), new Date().toISOString(), sessionId]);
-
-      // Trim conversation messages to keep database lean
-      trimEndedSessionMessages(sessionId);
     }
 
     send({ state_done: true, content: stateContent });
+
+    // ── Phase 2: Session report ──────────────────────────────────────────────
+    send({ report_start: true });
+
+    const reportHistory = [...baseHistory, {
+      role: 'user',
+      content: 'Now please write a session report — a narrative, blog-style account of this session written in past tense. Cover the key events, decisions, discoveries, and notable moments as an engaging adventure recap. This will serve as the permanent archive of this session.',
+    }];
+
+    let reportContent = '';
+    try {
+      const reportStream = anthropic.messages.stream({
+        model:      'claude-opus-4-5',
+        max_tokens: 2048,
+        system:     systemPrompt,
+        messages:   reportHistory,
+      });
+      for await (const event of reportStream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          reportContent += event.delta.text;
+          send({ report_text: event.delta.text });
+        }
+      }
+    } catch (reportErr) {
+      console.error('Session report generation error:', reportErr);
+    }
+
+    if (reportContent) {
+      dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+        [sessionId, 'archive', reportContent, new Date().toISOString()]);
+    }
+
+    // Trim after both state and report are saved (trim keeps archive + state)
+    trimEndedSessionMessages(sessionId);
+
+    send({ report_done: true, content: reportContent });
     send({ done: true });
   } catch (err) {
     console.error(err);

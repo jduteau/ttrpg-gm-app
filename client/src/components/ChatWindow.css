@@ -1,8 +1,7 @@
 .chat-window {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
   background: var(--bg-void);
   background-image:
     radial-gradient(ellipse at 60% 0%, var(--accent-gold-soft) 0%, transparent 50%),
@@ -527,10 +526,6 @@
 }
 
 @media (max-width: 900px) {
-  .chat-window {
-    min-height: 0;
-  }
-
   .chat-header {
     padding: 14px 18px 12px;
   }
