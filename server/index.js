@@ -524,7 +524,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 async function callArbiter(campaignId, question) {
   const systemPrompt = loadArbiterPrompt(campaignId);
   const response = await anthropic.messages.create({
-    model: 'claude-opus-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system: systemPrompt,
     messages: [{ role: 'user', content: question }],
@@ -544,7 +544,7 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
     let toolUseJson  = '';
 
     const stream = anthropic.messages.stream({
-      model:      'claude-opus-4-5',
+      model:      'claude-sonnet-4-6',
       max_tokens: 2048,
       system:     systemPrompt,
       tools:      hasArbiter ? [QUERY_RULES_TOOL, ROLL_DICE_TOOL] : [ROLL_DICE_TOOL],
@@ -888,7 +888,7 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
     let reportContent = '';
     try {
       const reportStream = anthropic.messages.stream({
-        model:      'claude-opus-4-5',
+        model:      'claude-sonnet-4-6',
         max_tokens: 2048,
         system:     systemPrompt,
         messages:   reportHistory,

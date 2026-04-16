@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import './ChatWindow.css';
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ function ArbiterBlock({ question, ruling }) {
       {open && (
         <div className="arbiter-body">
           <div className="arbiter-q"><span className="arbiter-q-label">Q</span>{question}</div>
-          <div className="arbiter-a"><span className="arbiter-a-label">A</span>{ruling}</div>
+          <div className="arbiter-a"><span className="arbiter-a-label">A</span><ReactMarkdown>{ruling}</ReactMarkdown></div>
         </div>
       )}
     </div>
@@ -59,7 +60,7 @@ function StateBlock({ content, isStreaming }) {
       {open && (
         <div className="state-body">
           <div className="state-content">
-            {content}
+            <ReactMarkdown>{content}</ReactMarkdown>
             {isStreaming && <span className="cursor" />}
           </div>
         </div>
@@ -75,7 +76,9 @@ function Message({ msg }) {
         <div className="message-archive-header">
           <span className="archive-rule" /><span className="archive-label">📜 Session Archive</span><span className="archive-rule" />
         </div>
-        <div className="message-content">{msg.content}</div>
+        <div className="message-content">
+          {msg.role === 'assistant' ? <ReactMarkdown>{msg.content}</ReactMarkdown> : msg.content}
+        </div>
         <div className="message-archive-footer">
           <span className="archive-rule" /><span className="archive-label-end">— End of Archive —</span><span className="archive-rule" />
         </div>
@@ -376,7 +379,10 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
         {streaming && streamBuffer && (
           <div className="message message-assistant streaming">
             <div className="message-label">GM</div>
-            <div className="message-content">{streamBuffer}<span className="cursor" /></div>
+            <div className="message-content">
+              <ReactMarkdown>{streamBuffer}</ReactMarkdown>
+              <span className="cursor" />
+            </div>
           </div>
         )}
         {streaming && !streamBuffer && !pendingArbiter && (
