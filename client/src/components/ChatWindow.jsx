@@ -77,7 +77,7 @@ function Message({ msg }) {
           <span className="archive-rule" /><span className="archive-label">📜 Session Archive</span><span className="archive-rule" />
         </div>
         <div className="message-content">
-          {msg.role === 'assistant' ? <ReactMarkdown>{msg.content}</ReactMarkdown> : msg.content}
+          <ReactMarkdown>{msg.content}</ReactMarkdown>
         </div>
         <div className="message-archive-footer">
           <span className="archive-rule" /><span className="archive-label-end">— End of Archive —</span><span className="archive-rule" />
@@ -99,7 +99,9 @@ function Message({ msg }) {
   return (
     <div className={`message message-${msg.role}`}>
       <div className="message-label">{msg.role === 'user' ? 'You' : 'GM'}</div>
-      <div className="message-content">{msg.content}</div>
+      <div className="message-content">
+        {msg.role === 'assistant' ? <ReactMarkdown>{msg.content}</ReactMarkdown> : msg.content}
+      </div>
     </div>
   );
 }
