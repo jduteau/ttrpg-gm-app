@@ -721,9 +721,49 @@ app.get('/api/sessions/:sessionId/messages', (req, res) => {
 });
 
 app.delete('/api/sessions/:sessionId', (req, res) => {
-  dbRun('DELETE FROM messages WHERE session_id = ?', [req.params.sessionId]);
-  dbRun('DELETE FROM sessions WHERE id = ?', [req.params.sessionId]);
-  res.json({ success: true });
+  const { sessionId } = req.params;
+
+  const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+
+  // Only the most recent session for this campaign may be deleted
+  const latestSession = dbGet(
+    'SELECT id FROM sessions WHERE campaign_id = ? ORDER BY created_at DESC LIMIT 1',
+    [session.campaign_id]
+  );
+  if (!latestSession || latestSession.id !== parseInt(sessionId)) {
+    return res.status(400).json({ error: 'Only the most recent session can be deleted.' });
+  }
+
+  let stateRestored = false;
+
+  // If the session was ended, roll the state file back to the most recent backup
+  if (session.ended_at) {
+    const { rulesetId, campaignId: campId } = parseCampaignId(session.campaign_id);
+    const campaignPath = join(RULESETS_DIR, rulesetId, 'campaigns', campId);
+    const statePath    = join(campaignPath, 'session-state.md');
+    const backupDir    = join(campaignPath, 'state-backups');
+
+    if (existsSync(backupDir)) {
+      const backups = readdirSync(backupDir)
+        .filter(f => f.startsWith('session-state-') && f.endsWith('.md'))
+        .sort(); // alphabetical sort = chronological order given the timestamp format
+
+      if (backups.length > 0) {
+        copyFileSync(join(backupDir, backups[backups.length - 1]), statePath);
+        stateRestored = true;
+      } else if (existsSync(statePath)) {
+        writeFileSync(statePath, '<!-- No prior state -->\n', 'utf-8');
+      }
+    } else if (existsSync(statePath)) {
+      writeFileSync(statePath, '<!-- No prior state -->\n', 'utf-8');
+    }
+  }
+
+  dbRun('DELETE FROM messages WHERE session_id = ?', [sessionId]);
+  dbRun('DELETE FROM sessions WHERE id = ?', [sessionId]);
+
+  res.json({ success: true, stateRestored });
 });
 
 // Cleanup endpoint: trim messages from all ended sessions

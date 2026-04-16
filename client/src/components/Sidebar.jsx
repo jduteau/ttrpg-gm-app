@@ -44,14 +44,17 @@ export default function Sidebar({
 
   useEffect(() => { fetchSessions(); }, [fetchSessions, activeSession]);
 
-  const handleDelete = async (e, sessionId) => {
+  const handleDelete = async (e, session) => {
     e.stopPropagation();
-    if (!confirm('Delete this session?')) return;
-    setDeletingId(sessionId);
-    await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+    const msg = session.ended_at
+      ? 'Delete this session? The campaign state will be rolled back to the previous session.'
+      : 'Delete this session?';
+    if (!confirm(msg)) return;
+    setDeletingId(session.id);
+    await fetch(`/api/sessions/${session.id}`, { method: 'DELETE' });
     setDeletingId(null);
     fetchSessions();
-    if (activeSession?.id === sessionId) onSelectSession(null);
+    if (activeSession?.id === session.id) onSelectSession(null);
   };
 
   const contextFiles = activeSession?.context_files || [];
@@ -111,7 +114,7 @@ export default function Sidebar({
         {sessions.length === 0 && (
           <div className="session-empty">No sessions yet</div>
         )}
-        {sessions.map(session => (
+        {sessions.map((session, index) => (
           <div
             key={session.id}
             className={`session-item ${activeSession?.id === session.id ? 'active' : ''} ${deletingId === session.id ? 'deleting' : ''} ${!session.ended_at ? 'in-progress' : 'ended'}`}
@@ -126,7 +129,9 @@ export default function Sidebar({
                 )}
               </div>
             </div>
-            <button className="session-delete" onClick={e => handleDelete(e, session.id)} title="Delete">✕</button>
+            {index === 0 && (
+              <button className="session-delete" onClick={e => handleDelete(e, session)} title="Delete">✕</button>
+            )}
           </div>
         ))}
       </div>
