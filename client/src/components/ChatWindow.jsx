@@ -169,31 +169,8 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
   const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
-  useEffect(() => {
-    fetch(`/api/sessions/${session.id}/messages`)
-      .then(r => r.json())
-      .then(raw => {
-        const merged = mergeMessages(raw);
-        setMessages(merged);
-        setSessionEnded(!!session.ended_at);
-      });
-    setStreamBuffer(''); setStreaming(false);
-    setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
-    setEnding(false); setStateBuffer(''); setReportBuffer('');
-    setShowEndConfirm(false);
-    setSessionTitle(session.title);
-  }, [session.id]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer, reportBuffer]);
-
   // ── Send chat message ───────────────────────────────────────────────────────
-  const send = async () => {
-    if (!input.trim() || streaming || ending || sessionEnded) return;
-    const text = input.trim();
-    setInput('');
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+  const sendMessage = async (text) => {
     setMessages(m => [...m, { role: 'user', content: text, id: Date.now() }]);
     setStreaming(true); setStreamBuffer('');
     setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
@@ -209,6 +186,37 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
       setMessages(m => [...m, { role: 'assistant', content: `[Error: ${err.message}]`, id: Date.now() }]);
       setStreaming(false);
     }
+  };
+
+  useEffect(() => {
+    fetch(`/api/sessions/${session.id}/messages`)
+      .then(r => r.json())
+      .then(raw => {
+        const merged = mergeMessages(raw);
+        setMessages(merged);
+        setSessionEnded(!!session.ended_at);
+        // Auto-start: if the session has no messages yet, kick off the opening
+        if (merged.length === 0 && !session.ended_at) {
+          sendMessage('Begin.');
+        }
+      });
+    setStreamBuffer(''); setStreaming(false);
+    setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
+    setEnding(false); setStateBuffer(''); setReportBuffer('');
+    setShowEndConfirm(false);
+    setSessionTitle(session.title);
+  }, [session.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer, reportBuffer]);
+
+  const send = async () => {
+    if (!input.trim() || streaming || ending || sessionEnded) return;
+    const text = input.trim();
+    setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    await sendMessage(text);
   };
 
   // ── End session ─────────────────────────────────────────────────────────────
