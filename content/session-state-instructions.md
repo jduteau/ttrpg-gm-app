@@ -26,10 +26,13 @@ When instructed to produce the session state snapshot:
 
 ### World State Delta
 When instructed to generate a world state delta:
+- Err heavily on the side of inclusion — capture everything established, implied, or that could become relevant later, even if it seems throwaway. When in doubt, include it.
 - Review everything established, implied, or mentioned during this session
-- Capture facts that could become relevant later, even if they seemed throwaway
-- Record one fact per line with category tags and session reference
+- Record one fact per line with a category tag and session reference: `- **[CATEGORY]** Fact. [S#]`
+- Categories: LOCATIONS | NPCS | FACTIONS | PARTY | LORE | OPEN THREADS
 - Include prices, distances, timeframes mentioned in passing
-- Flag rumors or unverified information appropriately
-- Include both major and minor NPCs encountered
+- Flag rumors or unverified information as (UNVERIFIED)
+- Include both major and minor NPCs encountered (named or unnamed but notable)
 - Record party actions that others might remember
+- Include unresolved questions or hooks, even if you didn't intend them as hooks
+- Do not summarize or collapse entries — one fact per line

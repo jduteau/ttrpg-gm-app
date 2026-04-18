@@ -927,26 +927,7 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
 
     const worldDeltaHistory = [...baseHistory, {
       role: 'user',
-      content: `Review the session transcript and generate a World State Delta. 
-
-Err heavily on the side of inclusion — capture everything that was established, implied, or could become relevant later, even if it seems throwaway. When in doubt, include it.
-
-For each entry record:
-- The fact itself
-- Which session established it [S#] 
-- Category: LOCATIONS | NPCS | FACTIONS | PARTY | LORE | OPEN THREADS
-
-Include:
-- Named or described locations, even briefly mentioned ones
-- Any NPC, named or unnamed but notable (the stable owner, the adjuster)
-- Prices, distances, timeframes mentioned in passing
-- Rumors, secondhand information (flag as UNVERIFIED)
-- Anything the party did that others might remember
-- Unresolved questions or hooks, even if you didn't intend them as hooks
-
-Do not summarize or collapse entries. One fact per line.
-
-Output only the world state delta — no other commentary.`,
+      content: 'Please generate a World State Delta as instructed in your system prompt. Output only the world state delta — no other commentary.',
     }];
 
     let worldDeltaContent = '';

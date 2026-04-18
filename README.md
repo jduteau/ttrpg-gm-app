@@ -25,6 +25,7 @@ npm install --prefix client
 ```bash
 cp .env.example .env
 # Edit .env and paste your ANTHROPIC_API_KEY
+# Optionally set CONTENT_DIR if you want content stored outside the project
 ```
 
 ### 4. Run in development mode
@@ -44,11 +45,13 @@ npm start       # serves everything from Express on port 3001
 ## Project structure
 ```
 ttrpg-gm-app/
-├── server/
-│   ├── index.js                      # Express API, Anthropic streaming, all routes
+├── content/                          # All campaign content and the database
 │   ├── arbiter-prompt.md             # Rules arbiter persona
 │   ├── session-state-instructions.md # GM instructions for reading/writing state
 │   ├── session-state-template.md     # Fallback state template
+│   ├── world-state-template.md       # World state format reference
+│   ├── data/
+│   │   └── sessions.db               # SQLite database (sql.js)
 │   └── rulesets/
 │       └── {rulesetId}/
 │           ├── system-prompt.md      # Core rules (# header = display name)
@@ -60,9 +63,13 @@ ttrpg-gm-app/
 │               └── {campaignId}/
 │                   ├── campaign-prompt.md  # Party, setting, house rules (# header = display name)
 │                   ├── session-state.md    # Current campaign state (auto-updated)
-│                   ├── state-backups/      # Dated state snapshots
+│                   ├── world-state.md      # Accumulated facts and continuity (auto-updated)
+│                   ├── state-backups/      # Dated session state snapshots
+│                   ├── world-backups/      # Dated world state snapshots
 │                   ├── modules/            # Campaign-specific modules
 │                   └── references/         # Campaign-specific references
+├── server/
+│   └── index.js                      # Express API, Anthropic streaming, all routes
 ├── client/                           # Vite + React frontend
 │   └── src/
 │       ├── App.jsx
@@ -81,13 +88,13 @@ ttrpg-gm-app/
 ## Adding content
 
 ### Add a new campaign to an existing ruleset
-1. Create `server/rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md`
+1. Create `content/rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md`
 2. First line should be a `# Campaign Name` header
 3. Add a `## Campaign Overview` section for the description shown in the UI
 4. Restart the server — it auto-discovers the new campaign
 
 ### Add a new ruleset
-1. Create `server/rulesets/{rulesetId}/system-prompt.md` (first line: `# Ruleset Name`)
+1. Create `content/rulesets/{rulesetId}/system-prompt.md` (first line: `# Ruleset Name`)
 2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, `modules/`, `references/`
 3. Create at least one campaign under `campaigns/`
 4. Optionally add an icon/color entry to `RULESET_DEFAULTS` in `server/index.js`.
@@ -125,9 +132,10 @@ Tip: use single quotes for paths with spaces — `'~/Documents/My Sessions/sessi
 ---
 
 ## Data
-- All session data is stored locally in `server/data/sessions.db` (SQLite via sql.js)
+- All session data is stored locally in `content/data/sessions.db` (SQLite via sql.js)
 - No data leaves your machine except API calls to Anthropic
-- To back up your data, copy `server/data/sessions.db` and the `server/rulesets/` folder
+- To back up your data, copy `content/data/sessions.db` and the `content/rulesets/` folder
+- Set `CONTENT_DIR` in `.env` to store content outside the project directory (useful for server deployments)
 
 ---
 

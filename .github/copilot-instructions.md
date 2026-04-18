@@ -8,69 +8,78 @@ A self-hosted AI Game Master application for solo tabletop RPG campaigns. Node.j
 
 ```
 ttrpg-gm-app/
-├── server/
-│   ├── index.js                        # Express server — all API routes and Anthropic calls
-│   ├── arbiter-prompt.md               # Shared rules arbiter persona
-│   ├── session-state-instructions.md   # Shared GM instructions for reading/writing state
-│   ├── session-state-template.md       # Universal session state template (fallback)
+├── content/                                # All campaign content and the database
+│   ├── arbiter-prompt.md                   # Shared rules arbiter persona
+│   ├── session-state-instructions.md       # Shared GM instructions for reading/writing state
+│   ├── session-state-template.md           # Universal session state template (fallback)
+│   ├── world-state-template.md             # World state format reference
+│   ├── data/
+│   │   └── sessions.db                     # SQLite database (sql.js)
 │   └── rulesets/
 │       ├── ose/
-│       │   ├── system-prompt.md        # Core OSE rules and mechanics
-│       │   ├── rules-arbiter.md        # OSE rules reference for arbiter
-│       │   ├── session-state-fields.md # OSE-specific state template
-│       │   ├── modules/                # Shared OSE modules (.md)
-│       │   ├── references/             # Shared OSE references (.md)
+│       │   ├── system-prompt.md            # Core OSE rules and mechanics
+│       │   ├── rules-arbiter.md            # OSE rules reference for arbiter
+│       │   ├── session-state-fields.md     # OSE-specific state template
+│       │   ├── modules/                    # Shared OSE modules (.md)
+│       │   ├── references/                 # Shared OSE references (.md)
 │       │   └── campaigns/
 │       │       └── lolth-conspiracy/
-│       │           ├── campaign-prompt.md    # Party, setting, house rules
-│       │           ├── session-state.md      # Current campaign state
-│       │           ├── state-backups/        # Dated state snapshots
-│       │           ├── modules/              # Campaign-specific modules
-│       │           └── references/           # Campaign-specific references
+│       │           ├── campaign-prompt.md  # Party, setting, house rules
+│       │           ├── session-state.md    # Current campaign state
+│       │           ├── world-state.md      # Accumulated facts and continuity
+│       │           ├── state-backups/      # Dated state snapshots
+│       │           ├── world-backups/      # Dated world state snapshots
+│       │           ├── modules/            # Campaign-specific modules
+│       │           └── references/         # Campaign-specific references
 │       ├── masks/
-│       │   ├── system-prompt.md        # Core Masks rules
-│       │   ├── rules-arbiter.md        # Masks rules reference
-│       │   ├── session-state-fields.md # Masks-specific state template
+│       │   ├── system-prompt.md            # Core Masks rules
+│       │   ├── rules-arbiter.md            # Masks rules reference
+│       │   ├── session-state-fields.md     # Masks-specific state template
 │       │   └── campaigns/
-│       │       └── halcyon-city/
-│       │           ├── campaign-prompt.md    # Team details, setting
-│       │           └── session-state.md      # Current campaign state
+│       │       └── last-resort/
+│       │           ├── campaign-prompt.md  # Team details, setting
+│       │           ├── session-state.md    # Current campaign state
+│       │           └── world-state.md      # Accumulated facts and continuity
 │       ├── dragonbane/
-│       │   ├── system-prompt.md        # Core Dragonbane rules
-│       │   ├── session-state-fields.md # Dragonbane-specific state template
+│       │   ├── system-prompt.md            # Core Dragonbane rules
+│       │   ├── session-state-fields.md     # Dragonbane-specific state template
 │       │   └── campaigns/
 │       │       └── dragon-emperor/
 │       │           ├── campaign-prompt.md
-│       │           └── session-state.md
+│       │           ├── session-state.md
+│       │           └── world-state.md
 │       └── ironsworn-badlands/
-│           ├── system-prompt.md        # Core Ironsworn: Badlands rules
-│           ├── session-state-fields.md # Ironsworn-specific state template
+│           ├── system-prompt.md            # Core Ironsworn: Badlands rules
+│           ├── session-state-fields.md     # Ironsworn-specific state template
 │           └── campaigns/
 │               └── jake-powell/
 │                   ├── campaign-prompt.md
-│                   └── session-state.md
+│                   ├── session-state.md
+│                   └── world-state.md
+├── server/
+│   └── index.js                            # Express server — all API routes and Anthropic calls
 ├── client/
 │   ├── index.html
-│   ├── vite.config.js                  # Proxies /api → localhost:3001
+│   ├── vite.config.js                      # Proxies /api → localhost:3001
 │   └── src/
 │       ├── main.jsx
-│       ├── App.jsx                     # Root: campaign selector, session routing, dialog state
+│       ├── App.jsx                         # Root: campaign selector, session routing, dialog state
 │       ├── App.css
-│       ├── index.css                   # CSS variables and global styles
+│       ├── index.css                       # CSS variables and global styles
 │       └── components/
-│           ├── CampaignSelector.jsx    # Full-screen campaign picker
+│           ├── CampaignSelector.jsx        # Full-screen campaign picker
 │           ├── CampaignSelector.css
-│           ├── Sidebar.jsx             # Session list, active context files, state badge
+│           ├── Sidebar.jsx                 # Session list, active context files, state badge
 │           ├── Sidebar.css
-│           ├── ChatWindow.jsx          # Main chat, streaming, arbiter blocks, state blocks
+│           ├── ChatWindow.jsx              # Main chat, streaming, arbiter blocks, state blocks
 │           ├── ChatWindow.css
-│           ├── NewSessionDialog.jsx    # Module/reference picker before session starts
+│           ├── NewSessionDialog.jsx        # Module/reference picker before session starts
 │           └── NewSessionDialog.css
-├── import-sessions.js                  # CLI tool: import blog post archives into DB
-├── package.json                        # Root: concurrently dev scripts
-├── .env.example                        # ANTHROPIC_API_KEY, PORT
+├── import-sessions.js                      # CLI tool: import blog post archives into DB
+├── package.json                            # Root: concurrently dev scripts
+├── .env.example                            # ANTHROPIC_API_KEY, PORT, CONTENT_DIR, CORS_ORIGIN
 └── .github/
-    └── copilot-instructions.md         # This file
+    └── copilot-instructions.md             # This file
 ```
 
 ---
@@ -78,7 +87,7 @@ ttrpg-gm-app/
 ## Tech Stack
 
 - **Backend**: Node.js 18+, Express, ES modules (`"type": "module"`)
-- **Database**: sql.js (pure-JS SQLite, no native compilation) — `server/data/sessions.db`
+- **Database**: sql.js (pure-JS SQLite, no native compilation) — `content/data/sessions.db`
 - **AI**: `@anthropic-ai/sdk` — streaming via `anthropic.messages.stream()`, tool use for rules arbiter
 - **Frontend**: React 18, Vite 5, plain CSS (no Tailwind, no component library)
 - **Dev**: `concurrently` to run server and client together via `npm run dev` from root
@@ -114,6 +123,13 @@ Copy `.env.example` to `.env` in the project root and fill in:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 PORT=3001
+
+# Optional: path to content directory (rulesets, prompts, database)
+# Defaults to ./content relative to the project root
+# CONTENT_DIR=/path/to/content
+
+# Optional: allowed CORS origins for split client/server deploys
+# CORS_ORIGIN=https://your-client.example.com
 ```
 
 The server loads this via `dotenv/config`.
@@ -146,19 +162,20 @@ messages (
 
 ### Message roles
 | Role | Content | Purpose |
-|------|---------|---------|
+|------|---------|-------|
 | `user` | plain text | Player input |
 | `assistant` | plain text | GM response |
 | `tool_use` | JSON `{tool_use_id, question}` | Rules arbiter query (for UI rendering) |
 | `tool_result` | JSON `{tool_use_id, result}` | Rules arbiter ruling (for UI rendering) |
 | `archive` | plain text | Imported session blog post |
 | `state` | plain text | End-of-session state snapshot |
+| `world_delta` | plain text | End-of-session world state delta (new facts) |
 
 ### Message Trimming
 
 Ended sessions automatically trim conversation messages to keep the database lean:
 - **Kept**: `archive` and `state` messages (provide continuity)
-- **Removed**: `user`, `assistant`, `tool_use`, `tool_result` messages (conversational flow)
+- **Removed**: `user`, `assistant`, `tool_use`, `tool_result`, `world_delta` messages (conversational flow; world delta content is already persisted to `world-state.md`)
 
 When a session ends, only archive content and final state are preserved. The next session starts fresh with the state file injected into the system prompt, maintaining full continuity.
 
@@ -184,13 +201,17 @@ All routes are in `server/index.js`.
 ### SSE event types (chat and end endpoints)
 
 ```js
-{ text: "..." }                          // streaming GM text chunk
-{ arbiter_start: true, question: "..." } // arbiter being consulted
-{ arbiter_done: true, question, ruling } // arbiter ruling received
-{ state_start: true }                    // end-session state generation starting
-{ state_done: true, content: "..." }     // state saved to file
-{ done: true }                           // stream complete
-{ error: "..." }                         // error occurred
+{ text: "..." }                              // streaming GM text chunk
+{ arbiter_start: true, question: "..." }     // arbiter being consulted
+{ arbiter_done: true, question, ruling }     // arbiter ruling received
+{ dice_roll: true, label, expressions, results } // dice rolled server-side
+{ state_start: true }                        // end-session state generation starting
+{ state_done: true, content: "..." }         // state saved to file
+{ world_delta_start: true }                  // end-session world state delta starting
+{ world_delta_text: "..." }                  // streaming world delta chunk
+{ world_delta_done: true, content: "..." }   // world delta saved to file
+{ done: true }                               // stream complete
+{ error: "..." }                             // error occurred
 ```
 
 ---
@@ -267,24 +288,24 @@ End Session flow:
 
 ## Rulesets and Campaigns
 
-Rulesets and campaigns are **dynamically discovered** by scanning the `server/rulesets/` directory at server startup — no hardcoded definitions required.
+Rulesets and campaigns are **dynamically discovered** by scanning the `content/rulesets/` directory at server startup — no hardcoded definitions required.
 
 ### Discovery mechanism (`server/index.js`)
 
-- `scanRulesets()` — reads each subdirectory of `server/rulesets/`, extracts the name from the first markdown header in `system-prompt.md`
+- `scanRulesets()` — reads each subdirectory of `content/rulesets/`, extracts the name from the first markdown header in `system-prompt.md`
 - `scanCampaigns()` — for each ruleset, reads each subdirectory of `campaigns/`, extracts name from `campaign-prompt.md`
 - Results are cached in `_rulesetsCache` / `_campaignsCache` for the lifetime of the server process
 - `RULESET_DEFAULTS` provides icon/color overrides for known ruleset IDs; unknown rulesets fall back to `🎲` / `#6e7560`
 
 ### Adding a new campaign to an existing ruleset
 
-1. Create `server/rulesets/{rulesetId}/campaigns/{campaignId}/` with `campaign-prompt.md`
-2. Optionally add campaign-specific `modules/`, `references/`, and `session-state.md`
+1. Create `content/rulesets/{rulesetId}/campaigns/{campaignId}/` with `campaign-prompt.md`
+2. Optionally add campaign-specific `modules/`, `references/`, `session-state.md`, and `world-state.md`
 3. Restart the server — it will be auto-discovered
 
 ### Adding a new ruleset
 
-1. Create `server/rulesets/{rulesetId}/` with `system-prompt.md` (first line should be a `#` header — used as the display name)
+1. Create `content/rulesets/{rulesetId}/` with `system-prompt.md` (first line should be a `#` header — used as the display name)
 2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, shared `modules/`, `references/`
 3. Create first campaign under `campaigns/` subdirectory
 4. Add an entry to `RULESET_DEFAULTS` in `server/index.js` for custom icon/color (optional)
@@ -351,7 +372,7 @@ node import-sessions.js --list
 - Recaps are stored as `role: 'archive'` messages — rendered as gold-bordered blocks in the UI, excluded from Anthropic message history
 - State is stored as `role: 'state'` message, written to `session-state.md` in the campaign folder, and backed up to `state-backups/` if a state already exists
 - Sessions imported with `--state` are marked `ended_at` in the database
-- Available campaigns are dynamically discovered from `server/rulesets/` (no hardcoded list)
+- Available campaigns are dynamically discovered from `content/rulesets/` (no hardcoded list)
 - File paths support `~` expansion and shell backslash escapes; use single quotes in the shell to avoid quoting issues with spaces
 
 ---
@@ -363,7 +384,7 @@ node import-sessions.js --list
 - **Top-level await**: `server/index.js` uses top-level await for `initSqlJs()` — this requires Node 18+.
 - **Stream loop**: the chat endpoint uses a `while (continueLoop)` pattern to handle multiple tool use calls in a single GM response. Each loop iteration is one Anthropic API call.
 - **History reconstruction**: `buildHistory()` in the server reconstructs the full Anthropic-compatible message array from DB rows, including interleaving `tool_use` and `tool_result` content blocks in the right positions.
-- **Archive messages excluded**: `archive` and `state` role messages are skipped in `buildHistory()` — they are context for the system prompt, not conversation turns.
+- **Archive messages excluded**: `archive`, `state`, and `world_delta` role messages are skipped in `buildHistory()` — they are context for the system prompt or files on disk, not conversation turns.
 - **Composite campaign IDs**: Campaign IDs use the format `rulesetId.campaignId` (e.g., `ose.lolth-conspiracy`). The `parseCampaignId()` helper splits these for file path construction.
 - **File cascade loading**: The system first checks campaign-specific folders, then falls back to ruleset-level shared folders for modules and references.
 - **Legacy API compatibility**: `/api/campaigns` endpoint maintains backward compatibility by converting the new structure to the old flat format for the frontend.
