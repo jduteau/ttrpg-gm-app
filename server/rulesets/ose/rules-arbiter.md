@@ -1,9 +1,20 @@
+<!-- RULES REFERENCE: OSE Advanced Fantasy (Old-School Essentials Advanced Fantasy) -->
+<!-- TAG SCHEMA:
+  section: category of content (class-feature | progression-table | procedural-rule | combat-rule | special-ability | spell | clarification | reference-table)
+  interacts-with: other sections that apply simultaneously to the same situation
+  ambiguity: known grey area — arbiter MUST surface this in Notes when relevant
+  silent-rule: OSE does not address this; a ruling is required if it comes up
+  clarification: corrects a common misread of this rule
+-->
+
 # OSE Advanced Fantasy — Rules Reference
 
 ---
 
+<!-- section: class-reference -->
 # Character Classes
 
+<!-- section: class-feature -->
 ## Cleric
 
 **Requirements:** None | **Prime Requisite:** WIS | **Hit Dice:** 1d6 | **Max Level:** 14
@@ -22,6 +33,10 @@ Clerics can use all types of armour. Holy doctrine prevents use of bladed or pie
 - Spell casting begins at 2nd level; spell list on p128.
 - May use magic scrolls and divine magic items (e.g. some staves).
 
+<!-- section: special-ability -->
+<!-- interacts-with: Paladin Turning the Undead, Magic — Turning the Undead Optional Rule -->
+<!-- ambiguity: The standard rule (p. Cleric) says turning may be attempted WITHOUT LIMIT per encounter. The optional rule (Magic section) limits it to once per encounter. The GM must decide which rule applies — these two sections conflict. -->
+<!-- clarification: "Excess HD wasted" means if you roll 7 HD affected but only 4 HD of undead are present, 3 HD are wasted — it does NOT mean you can split the roll across multiple undead types arbitrarily; lowest HD are always affected first. -->
 ### Turning the Undead
 Roll 2d6 and consult the table. On success, roll 2d6 again to determine total HD affected.
 - **Turned:** Leave the area; will not harm or contact the cleric.
@@ -29,6 +44,7 @@ Roll 2d6 and consult the table. On success, roll 2d6 again to determine total HD
 - **Excess HD:** Wasted, but at least one undead is always affected on success.
 - **Mixed groups:** Lowest HD affected first.
 
+<!-- section: reference-table --><!-- interacts-with: Cleric Turning the Undead, Paladin Turning Table -->
 #### Cleric Turning Table
 
 | Cleric Level | 1 HD | 2 HD | 2* HD | 3 HD | 4 HD | 5 HD | 6 HD | 7–9 HD |
@@ -51,6 +67,8 @@ Roll 2d6 and consult the table. On success, roll 2d6 again to determine total HD
 ### After 9th Level
 May establish a stronghold at half price (divine intervention). Attracts 5d6×10 fighters of levels 1–2, completely devoted (never check morale).
 
+<!-- section: progression-table --><!-- interacts-with: Ability Scores CON (HP modifier stops applying after max HD), Divine Magic -->
+<!-- clarification: CON modifiers no longer apply from 10th level onwards (marked * on HD). This means CON bonuses/penalties do NOT apply to the flat +1/+2/etc. HP gained each level after 9th. -->
 ### Cleric Level Progression
 
 | Level | XP | HD | THAC0 | D | W | P | B | S | Sp1 | Sp2 | Sp3 | Sp4 | Sp5 |
@@ -74,13 +92,16 @@ May establish a stronghold at half price (divine intervention). Attracts 5d6×10
 
 ---
 
+<!-- section: class-feature -->
 ## Fighter
+<!-- clarification: The Fighter is included here as the THAC0 baseline reference. Fighters have no special class abilities listed here beyond combat — they gain no spells, turning, or thief skills. -->
 
 **Requirements:** None | **Prime Requisite:** STR | **Hit Dice:** 1d8 | **Max Level:** 14
 **Armour:** Any, including shields | **Weapons:** Any
 
 Fighters are combat specialists. Included here as the THAC0 baseline reference class.
 
+<!-- section: progression-table -->
 ### Fighter Level Progression
 
 | Level | XP | HD | THAC0 | D | W | P | B | S |
@@ -104,6 +125,7 @@ Fighters are combat specialists. Included here as the THAC0 baseline reference c
 
 ---
 
+<!-- section: class-feature -->
 ## Magic-User
 
 **Requirements:** None | **Prime Requisite:** INT | **Hit Dice:** 1d4 | **Max Level:** 14
@@ -121,9 +143,12 @@ Cannot wear armour or use shields. May only use daggers (and optionally a staff)
 - From 11th level: may build a stronghold; 1d6 apprentices of levels 1–3 arrive.
 - Spell list on p131. May use arcane scrolls and arcane magic items (e.g. wands).
 
+<!-- section: class-feature --><!-- interacts-with: Magic — Spell Books, Magic — Memorizing Spells -->
+<!-- clarification: Under STANDARD spell book rules, the progression table shows BOTH the book total AND spells memorisable per day — they are the same number. Under ADVANCED (optional) spell book rules, the book is unlimited; the table shows only memorisable spells per day. The referee must decide which rule is in use. -->
 ### Spell Casting
 The progression table shows both the number of spells in the spell book and the number that may be memorised per day. A 1st level magic-user has one spell in their book (referee selects; may allow player choice).
 
+<!-- section: progression-table -->
 ### Magic-User Level Progression
 
 | Level | XP | HD | THAC0 | D | W | P | B | S | Sp1 | Sp2 | Sp3 | Sp4 | Sp5 | Sp6 |
@@ -147,6 +172,7 @@ The progression table shows both the number of spells in the spell book and the 
 
 ---
 
+<!-- section: class-feature -->
 ## Paladin
 
 **Requirements:** Min CHA 9 | **Prime Requisite:** STR and WIS | **Hit Dice:** 1d8 | **Max Level:** 14
@@ -154,6 +180,8 @@ The progression table shows both the number of spells in the spell book and the 
 
 Paladins are warriors sworn by sacred oath to the service of a Lawful holy order.
 
+<!-- section: class-feature --><!-- interacts-with: Alignment rules -->
+<!-- clarification: Losing paladin status converts the character to a Fighter at the same level — saving throws, THAC0, and HD immediately change to Fighter values. The paladin loses divine magic, turning, lay on hands, holy resistance, vow restrictions, and the warhorse ability. Regaining status requires referee-determined quest. -->
 ### Alignment
 Must be Lawful. If alignment ever changes, loses all class abilities and becomes a fighter of the same level. May regain paladin status through a quest of atonement.
 
@@ -168,15 +196,20 @@ Can use all weapons and armour.
 - Must be faithful to alignment and religion; falling from favour may incur penalties.
 - Spell casting begins at 9th level, using the cleric spell list (p128).
 
+<!-- section: special-ability --><!-- clarification: This is complete immunity — it applies to both natural and magically-inflicted disease (e.g., cause disease spell). Lay on hands at 5th level is the only paladin ability that cures disease in others. -->
 ### Holy Resistance
 Immune to all disease.
 
+<!-- section: special-ability --><!-- ambiguity: The rule says "once per week" for curing disease but does not clarify whether that weekly use is separate from or consumes the daily healing use. Most defensible reading: they are separate — the paladin may heal AND cure disease in the same use if at 5th level or higher, but curing disease is limited to once per week regardless. -->
 ### Laying on Hands
 Once per day: heals 2 hp per paladin level by touch. At 5th level and higher: may also cure disease once per week by laying on hands.
 
+<!-- section: special-ability --><!-- interacts-with: Cleric Turning the Undead, Paladin Turning Table, Magic — Turning Optional Rule -->
+<!-- clarification: The Paladin turning table starts at level 3 (no ability at levels 1–2). The paladin turns as if a cleric of equal level MINUS 2 (e.g. a 5th level paladin uses the row for cleric level 3). The table below is already adjusted — use it directly. -->
 ### Turning the Undead
 From 3rd level: can turn undead using the same procedure as clerics. Roll 2d6 and consult the table below.
 
+<!-- section: reference-table --><!-- interacts-with: Cleric Turning Table -->
 #### Paladin Turning Table
 
 | Paladin Level | 1 HD | 2 HD | 2* HD | 3 HD | 4 HD | 5 HD | 6 HD | 7–9 HD |
@@ -195,15 +228,19 @@ From 3rd level: can turn undead using the same procedure as clerics. Roll 2d6 an
 
 *–: Fails · Number: Roll must meet or exceed · T: Succeeds · D: Destroyed*
 
+<!-- section: class-feature --><!-- ambiguity: The vow restricts MAGICAL items — a paladin may still carry mundane weapons as backups or for non-combat use. The rule is silent on whether non-melee magical weapons (e.g. a wand) count against the limit; most defensible reading is the limit applies only to armour, shields, and melee weapons as listed. -->
 ### Vow of Humility
 May keep only: one suit of magical armour, one magical shield, one magical melee weapon. Must donate 10% of all income to a Lawful religious institution.
 
+<!-- section: special-ability --><!-- silent-rule: The rule does not specify whether the warhorse can be dismissed and re-summoned at will, or whether it exists permanently until death. Ruling required if this question arises. -->
 ### Warhorse
 From 4th level: may summon a holy charger — AC 5 [14], 5+5 HD, movement 180' (60'). If it dies, another cannot be summoned for 10 years.
 
 ### After 9th Level
 With permission of their holy order, may build a castle or stronghold and control surrounding lands. May be granted the title Baron or Baroness.
 
+<!-- section: progression-table --><!-- interacts-with: Cleric spell list (Paladins use cleric spells from 9th level) -->
+<!-- clarification: Paladins cast from the CLERIC spell list, not a paladin-specific list. Spell access begins at 9th level. -->
 ### Paladin Level Progression
 
 | Level | XP | HD | THAC0 | D | W | P | B | S | Sp1 | Sp2 | Sp3 |
@@ -227,6 +264,7 @@ With permission of their holy order, may build a castle or stronghold and contro
 
 ---
 
+<!-- section: class-feature -->
 ## Ranger
 
 **Requirements:** Min CON 9, Min WIS 9 | **Prime Requisite:** STR | **Hit Dice:** 1d8 | **Max Level:** 14
@@ -237,6 +275,8 @@ Rangers are members of a secret society protecting their native lands from invas
 ### Alignment
 May only be Lawful or Neutral. If alignment changes to Chaotic, loses all class abilities and becomes a fighter of the same level. May regain ranger status through a special quest.
 
+<!-- section: special-ability --><!-- interacts-with: Encounters — Surprise Checks -->
+<!-- clarification: The ranger is surprised only on a 1 (instead of 1–2 on 1d6). When the party IS surprised but the ranger is not, the ranger may act in the surprise round — but their companions still cannot. This does not protect companions from the surprise. -->
 ### Awareness
 Rangers are only surprised on a roll of 1. A ranger may act in a surprise round while companions are surprised.
 
@@ -255,9 +295,12 @@ May only keep wealth and possessions that can be carried on their person or moun
 ### Pursuit
 When the ranger's party pursues an opposing group in the wilderness, the chance of evasion is reduced by 10%.
 
+<!-- section: special-ability --><!-- interacts-with: Thief Skills (Move Silently, Hide in Shadows) -->
+<!-- ambiguity: Ranger stealth only functions "in the wilderness" — the rule is silent about dungeons or urban environments. If a ranger attempts to hide or move silently indoors, the referee must rule — either refuse the attempt or adjudicate a reduced chance. The ability is not a Thief skill and does not scale with level. -->
 ### Stealth
 In the wilderness: 3-in-6 chance to hide, 3-in-6 chance to move silently.
 
+<!-- section: special-ability --><!-- interacts-with: Ranger Tracking Chance table -->
 ### Tracking
 Rangers can identify and follow tracks. Roll d% against the chance of success. Modifiers apply:
 - Soft ground: +20% | Hard ground: –50%
@@ -267,6 +310,7 @@ Rangers can identify and follow tracks. Roll d% against the chance of success. M
 - Rainfall: –25% per hour
 - Efforts to hide tracks: –25%
 
+<!-- section: reference-table --><!-- clarification: A result over 100% (levels 10+) still means the check is not automatic — use d% and treat any result ≤ the percentage as success. A 110% means the ranger succeeds unless rolling 00 (100) — there is always a 15% minimum chance of FAILURE per Magical Research Chance of Failure rules, but tracking has no such minimum stated; the table should be read literally. -->
 #### Ranger Tracking Chance of Success
 
 | Level | Tracking |
@@ -285,6 +329,8 @@ Rangers can identify and follow tracks. Roll d% against the chance of success. M
 ### After 10th Level
 2d12 beings join the ranger as followers. Nature determined by the referee (may include adventurers, animals, fantastic mounts, sylvan creatures, or special monsters). Followers who die are not replaced.
 
+<!-- section: progression-table --><!-- interacts-with: Druid spell list (Rangers use druid spells from 8th level) -->
+<!-- clarification: Rangers cast from the DRUID spell list, not a ranger-specific list. Spell access begins at 8th level. -->
 ### Ranger Level Progression
 
 | Level | XP | HD | THAC0 | D | W | P | B | S | Sp1 | Sp2 | Sp3 |
@@ -308,6 +354,7 @@ Rangers can identify and follow tracks. Roll d% against the chance of success. M
 
 ---
 
+<!-- section: class-feature -->
 ## Thief
 
 **Requirements:** None | **Prime Requisite:** DEX | **Hit Dice:** 1d4 | **Max Level:** 14
@@ -318,6 +365,10 @@ Thieves are adventurers who live by deception and stealth, with unique skills th
 ### Combat
 Cannot wear armour heavier than leather. Cannot use shields. May use any weapon.
 
+<!-- section: special-ability --><!-- interacts-with: Encounters — Surprise, Combat — Initiative, Thief Skills (Move Silently, Hide in Shadows) -->
+<!-- ambiguity: "Unaware" is not defined precisely. The most defensible interpretation: the target must not be aware of the thief specifically (not just distracted). Being in melee with ANOTHER character does not automatically make a target "unaware" of the thief — the referee must judge. OSE is silent on whether a thief must succeed at Hide in Shadows or Move Silently first; requiring a successful stealth check before backstabbing is a common and defensible house ruling. -->
+<!-- ambiguity: "Doubles any damage dealt" means the final damage roll (after STR modifier and any other modifiers) is doubled — not just the die. A natural 1 damage +2 STR = 3 damage, doubled to 6. -->
+<!-- silent-rule: The rule does not specify whether backstab can be attempted at range (e.g. with a missile weapon from ambush). OSE is silent; ruling required. -->
 ### Back-Stab
 When attacking an unaware opponent from behind: +4 bonus to hit and doubles any damage dealt.
 
@@ -330,6 +381,8 @@ From 10th level: can cast arcane spells from scrolls. 10% chance of error — sp
 ### After 9th Level
 May establish a thief den, attracting 2d6 apprentices of 1st level. If any are arrested or killed, they cannot be replaced. A successful thief may use followers to start a Thieves' Guild.
 
+<!-- section: special-ability --><!-- interacts-with: Back-Stab, Dungeon Adventuring — Searching for Treasure Traps -->
+<!-- clarification: HN (Hear Noise) is rolled on 1d6, success if the roll is WITHIN the listed range (e.g. "1–2" means roll 1d6, succeed on 1 or 2). All other skills are d%, succeed if result is ≤ listed percentage. The referee secretly rolls for Hide in Shadows, Move Silently, and Hear Noise — the player does not know if failure is a failed roll or absence of opportunity. -->
 ### Thief Skills
 Skills and their chance of success by level. **Hear noise** is rolled on 1d6 (success if roll is within listed range). All other skills are rolled on d% (success if result ≤ listed percentage).
 
@@ -354,8 +407,10 @@ The referee should roll for Hear Noise, Hide in Shadows, and Move Silently on th
 
 *CS=Climb Sheer Surfaces · TR=Find/Remove Traps · HN=Hear Noise · HS=Hide in Shadows · MS=Move Silently · OL=Open Locks · PP=Pick Pockets*
 
+<!-- clarification: "More than double the required percentage" for Pick Pockets detection: if the thief needs 35% and rolls 71 or higher, the victim notices. This is independent of whether the attempt succeeded or failed. -->
 **Pick Pockets penalty:** –5% for every level the victim is above 5th. Always at least 1% chance of failure. A roll of more than double the required percentage means the victim notices.
 
+<!-- section: progression-table -->
 ### Thief Level Progression
 
 | Level | XP | HD | THAC0 | D | W | P | B | S |
@@ -379,7 +434,9 @@ The referee should roll for Hear Noise, Hide in Shadows, and Move Silently on th
 
 ---
 
+<!-- section: reference-table -->
 # Ability Scores
+<!-- interacts-with: Combat Attack Rolls (STR melee, DEX missile), Saving Throws (WIS magic saves), Character Classes (prime requisite XP modifier), Retainers (CHA max retainers and loyalty) -->
 A character’s score in each ability determines whether they have any bonuses or
 penalties associated with various actions in the game. The tables opposite list the
 modifiers associated with each ability score, with the effects described below.
@@ -420,6 +477,8 @@ Learning, memory, and reasoning.
 | 16–17 | Literate | Native + 2 additional |
 | 18 | Literate | Native + 3 additional |
 
+<!-- section: reference-table -->
+<!-- clarification: WIS magic save modifier applies to ALL saving throw categories EXCEPT Breath Attacks (B). It applies to Death/Poison, Wands, Paralysis/Petrification, and Spells/Rods/Staves. -->
 ## Wisdom (WIS)
 Willpower, common sense, perception, and intuition.
 - Magic saves: Is applied to saving
@@ -438,6 +497,8 @@ This does not normally include saves against breath attacks, but may apply to an
 | 16–17 | +2 |
 | 18 | +3 |
 
+<!-- section: reference-table --><!-- interacts-with: Combat Attack Rolls, Combat Initiative -->
+<!-- clarification: DEX modifier applies to ATTACK rolls with missile weapons but NOT to damage rolls. STR applies to melee attack AND damage rolls. DEX initiative bonus only applies under the OPTIONAL individual initiative rule — under standard group initiative DEX does not affect initiative. -->
 ## Dexterity (DEX)
 Agility, reflexes, speed, and balance.
 - AC: Modifies the character’s AC (a
@@ -459,6 +520,8 @@ initiative roll, if the optional rule for individual initiative is used.
 | 16–17 | +2 | +2 | +1 |
 | 18 | +3 | +3 | +2 |
 
+<!-- section: reference-table --><!-- interacts-with: Class Level Progression tables (HD) -->
+<!-- clarification: CON modifier applies each time a new HD is rolled. After reaching max HD (typically 9 for most classes), the character gains fixed HP per level and CON modifier NO LONGER APPLIES. A character always gains at least 1 HP per die rolled even if CON modifier would reduce it to 0 or below. -->
 ## Constitution (CON)
 Health, stamina, and endurance.
 - Hit points: Applies when rolling a
@@ -497,6 +560,8 @@ number of retainers a character may have at any one time.
 | 16–17 | +1 | 6 | 9 |
 | 18 | +2 | 7 | 10 |
 
+<!-- section: reference-table --><!-- interacts-with: Advancement — Prime Requisite Modifiers, individual class descriptions (some classes have multi-requisite XP rules) -->
+<!-- clarification: For classes with MULTIPLE prime requisites (e.g. Paladin needs STR and WIS), the standard prime requisite XP modifier table does NOT apply — the class description specifies the exact XP bonus conditions. -->
 ## Prime Requisite
 Each character class has one or more prime requisites—ability scores of special
 importance to that class’ function. A character’s score in their prime requisites affects how quickly they gain XP.
@@ -516,7 +581,9 @@ multiple prime requisites are noted in the class description.
 
 ---
 
+<!-- section: procedural-rule -->
 # Alignment
+<!-- interacts-with: Paladin Alignment, Ranger Alignment, Divine Magic — Spells and Deity Alignment, Turning the Undead -->
 All beings, whether PCs, NPCs, or monsters, adhere to one of three philosophies
 or spheres of behaviour, known as alignments. These spheres are Law, Neutrality,
 and Chaos. A player must choose one of these paths when creating a character.
@@ -560,12 +627,6 @@ characters with high Intelligence (at the referee’s discretion).
 ### Deepcommon
 Creatures native to the Underworld speak an alternative common tongue known as Deepcommon.
 
-### Alignment Languages
-All intelligent beings know a secret, unwritten language of gestures, signs, and
-code words associated with their alignment. This secret language allows beings of the same alignment to communicate.
-Beings of another alignment recognise when an alignment language is being used, but cannot understand. It is not possible to learn another alignment language
-except by changing alignment, in which case the former language is forgotten.
-
 ### Other Languages
 
 | d20 | Language |
@@ -593,6 +654,7 @@ except by changing alignment, in which case the former language is forgotten.
 
 ---
 
+<!-- section: procedural-rule -->
 # Advancement
 
 ## Prime Requisite Modifiers
@@ -604,6 +666,7 @@ When a character gains enough XP to reach the next experience level, the player
 should consult the description of the character’s class and note any improvements in saving throws, attack probabilities, spells per day, and other class abilities. If the character’s Hit Dice increase, a
 new Hit Die of the specified type should be rolled and the result added to the character’s maximum hit point total.
 
+<!-- section: procedural-rule --><!-- clarification: If a character would gain enough XP to skip a level, excess XP is lost — not banked for the next session. The character ends at 1 XP below the threshold for the level they would have jumped to. -->
 ## Maximum XP in One Session 
 
 Characters cannot advance more than one level in one session. Any additional
@@ -612,6 +675,7 @@ lost, leaving the character at 1 XP below the total for the next level.
 
 ---
 
+<!-- section: reference-table -->
 # Money
 
 Successful characters accumulate wealth from the spoils of their adventures. Treasure may take many forms, but often the most useful form of treasure is money.
@@ -634,6 +698,7 @@ See Strongholds, p118 for full rules on building a stronghold and founding a dom
 
 ---
 
+<!-- section: reference-table -->
 # Equipment — Weapons, Armour, Gear, and Poison
 
 ## Adventuring Gear
@@ -787,6 +852,8 @@ weapons already includes the weight of the ammunition and its container.
 | War hammer | 1d6 | Blunt, Melee |
 Damage: Die rolled when using the optional rule for variable weapon damage (see Combat, p234).
 
+<!-- section: reference-table --><!-- interacts-with: Combat — Slow Weapons, Combat — Charging, Combat — Melee Attacks -->
+<!-- clarification: BRACE doubles damage against CHARGING monsters (those who used the Charging special action). A braced weapon does NOT double damage against all attackers, only those specifically charging. SLOW weapons always act last regardless of initiative — even if the character wins initiative. CHARGE (lance quality) doubles damage on horseback moving 60'+ and attacking — this is separate from the general Charging combat action. -->
 ### Weapon Qualities
 
 - **Blunt:** May be used by clerics.
@@ -804,7 +871,10 @@ Two-handed: Requires both hands; the character cannot use a shield.
 
 ---
 
+<!-- section: special-ability -->
 # Poison 
+<!-- interacts-with: Saving Throws — Death or Poison, Cleric Holy Resistance (immune to disease not poison) -->
+<!-- clarification: Poison saves are under the "Death or Poison" category. A failed save is usually fatal for instant/death-effect poisons. Cleric/Paladin immunity to DISEASE does not confer immunity to POISON — these are separate effects. -->
 At the referee’s option, various types of poison may be available for purchase.
 Using poison is a chaotic act, so it will be avoided by many characters. The sale of
 poisons is also prohibited by most cultures. Characters may have to turn to the black market or to clandestine guilds (e.g.
@@ -835,6 +905,7 @@ Bloodstream poisons are typically applied to a bladed weapon.
 
 Applying a vial of poison to a weapon takes one turn. A vial of poison is sufficient for a single bladed melee weapon or up to 6 arrows or crossbow bolts.
 
+<!-- section: procedural-rule --><!-- clarification: Half effectiveness on the SECOND hit (not the second application). After two hits the poison is spent. After ONE day (not two), potency halves. For death-poisons at half effectiveness, the save bonus is +4, not automatic survival. -->
 ### Effectiveness
 
 Once applied to a blade, a poison is effective for up to two days or two hits in combat, whichever comes first.
@@ -868,7 +939,9 @@ Ingested poisons take effect when swallowed by the victim. A vial of poison is e
 
 ---
 
+<!-- section: procedural-rule -->
 # Retainers 
+<!-- interacts-with: Ability Scores CHA (max retainers, loyalty, NPC reactions), Advancement (retainer XP penalty) -->
 Retainers are NPCs that are hired by characters to accompany them on an adventure.
 Limit per PC: Each character is limited to a finite number of retainers, as indicated by the character’s Charisma score (see
 Ability Scores, p20).
@@ -936,6 +1009,8 @@ Normal humans: When a normal human (i.e. a retainer of level 0 with no character
 
 Ill will: A –1 penalty applies to further hiring reaction rolls while recruiting in the same town or area.
 
+<!-- section: procedural-rule --><!-- interacts-with: CHA Charisma Modifiers table -->
+<!-- clarification: Loyalty BASE is set by CHA at hiring. The referee can adjust it up or down based on treatment. A failed loyalty check in peril means the retainer likely flees that encounter. A failed check AFTER an adventure means they will not work for this PC again — they are not necessarily hostile, just unwilling to return. -->
 ## Loyalty 
 Retainers have a loyalty rating, determined by the hiring character’s CHA. This rating may be adjusted at the referee’s discretion:
 - Bonuses: A retainer’s loyalty may be
@@ -956,7 +1031,9 @@ retainer will not work for the PC again.
 
 ---
 
+<!-- section: procedural-rule -->
 # Magic — Spell Rules, Turning Undead, and Spell Books
+<!-- interacts-with: Combat — Spell Casting, Combat — Disrupting Spells, individual class descriptions -->
 
 ## Magic Spells 
 Some character classes have the ability to memorize and cast magical spells. A spell
@@ -974,12 +1051,17 @@ uninterrupted night’s sleep. It takes one hour to memorize all spells the char
 Duplicate spells: A character may memorize the same spell more than once, as
 long as they are capable of memorizing more than one spell of the given level.
 
+<!-- section: procedural-rule --><!-- interacts-with: Combat — Disrupting Spells, Combat — Spell Casting section -->
+<!-- clarification: Line of sight is required for the TARGET or aim point, not for the full area of effect. A fireball aimed at a visible point explodes normally even if some targets are around a corner. -->
+<!-- ambiguity: "Bound" prevents casting, but the rule is silent on whether a GRAPPLED (but not fully bound) caster can cast spells. Referee ruling required. -->
 ## Casting Spells 
 A memorized spell may be cast by precisely replicating the required set of hand gestures and mystical spoken words.
 Once only: When a spell is cast, knowledge of the spell is erased from the mind of the caster until it is memorized again.
 Freedom: The character must be able to speak and move their hands. A spell caster cannot cast spells if gagged, bound, or in an area of magical silence.
 Line of sight: Unless noted in a spell’s description, the intended target (a specific monster, character, object, or area of effect) must be visible to the caster.
 
+<!-- section: procedural-rule --><!-- interacts-with: individual spell descriptions -->
+<!-- clarification: CUMULATIVE EFFECTS — multiple spells cannot stack bonuses to the SAME ability. A character cannot benefit from both bless (+1 attack) and prayer (+1 attack) simultaneously on attack rolls. However, spells affecting DIFFERENT abilities can combine (e.g. bless +1 attack AND haste double attacks — these are different abilities). Spells CAN combine with magic ITEMS. -->
 ## Spell Effects 
 Selecting targets: Some spells affect multiple targets, either by area or by Hit
 Dice total. If the spell description does not specify how targets are selected, the
@@ -1032,10 +1114,13 @@ reversed spells, only using the normal versions of spells to benefit allies of t
 - Neutral characters: Will favour either
 normal or reversed spells, depending on the deity served (no deity favours both reversed and normal spells).
 
+<!-- section: procedural-rule --><!-- interacts-with: Cleric Turning the Undead, Paladin Turning the Undead, Limits on Turning (Optional Rule) -->
+<!-- clarification: The DEFAULT rule is unlimited turning attempts per encounter. The OPTIONAL rule (below) limits to once per encounter. These two rules are mutually exclusive — the referee chooses one. -->
 ### Turning the Undead 
 Some divine spell casters have the ability to turn the undead, with the chance of
 success noted in their character class description. Unless noted in the character class description, turning the undead may be attempted without limit.
 
+<!-- section: procedural-rule --><!-- ambiguity: This is an OPTIONAL rule. If in use, it overrides the unlimited attempts default. Check with referee whether this rule is active before ruling on turn frequency. -->
 ### Limits on Turning the Undead (Optional Rule) 
 Groups who wish to impose limits on turning the undead may use the following guidelines:
 - Frequency: Each character capable
@@ -1052,6 +1137,8 @@ sets of rules for handling spell books are presented here—standard rules which
 limit the number of spells a character may have in their spell book and advanced rules which allow arcane spell
 casters a much wider range of spells. The referee should decide which rules to use.
 
+<!-- section: procedural-rule --><!-- interacts-with: Magic-User Spell Casting, Magic-User Level Progression -->
+<!-- clarification: Under standard rules, spell book size = memorisable spells per day at current level. Adding spells when levelling up takes about a week of game time via mentoring. -->
 ### Standard Spell Book Rules
 
 #### Number of Spells
@@ -1076,6 +1163,7 @@ game time. The spells a character learns in this way are determined by the refer
 - Research: It is also possible to add
 spells to a spell book by means of magical research (see p126).
 
+<!-- section: procedural-rule --><!-- ambiguity: This is an OPTIONAL rule. Under advanced rules the spell book is unlimited, and the INT table governs both starting spells and copying chance. If a copy attempt fails, the character can NEVER learn that spell (from this rule). The referee must confirm which spell book system is in use. -->
 ### Advanced Spell Book Rules (Optional Rule)
 
 #### Number of Spells
@@ -1182,6 +1270,7 @@ fails. If the research fails, the money and time invested are lost.
 
 ---
 
+<!-- section: reference-table --><!-- interacts-with: Cleric Divine Magic, Paladin Divine Magic (uses cleric list from 9th), individual spell entries -->
 # Cleric Spell List
 
 *Reversible spells have their reversed name in parentheses.*
@@ -1196,6 +1285,7 @@ fails. If the research fails, the money and time invested are lost.
 
 **5th Level:** Commune, Create Food, Dispel Evil, Insect Plague, Quest (Remove Quest), Raise Dead (Finger of Death)
 
+<!-- section: reference-table --><!-- interacts-with: Magic-User Arcane Magic, Thief Scroll Use (arcane scrolls from 10th level) -->
 # Magic-User Spell List
 
 *Reversible spells have their reversed name in parentheses.*
@@ -1214,10 +1304,14 @@ fails. If the research fails, the money and time invested are lost.
 
 ---
 
+<!-- section: spell -->
 # Cleric Spells
+<!-- clarification: All cleric spells are divine. Divine casters choose normal OR reversed form at casting time (not memorization), except that casting reversed forms of healing/helpful spells may incur deity disfavour for Lawful casters. -->
 
 ## 1st Level Spells
 
+<!-- section: spell --><!-- interacts-with: Cause Light Wounds (reversed), Damage and Healing -->
+<!-- clarification: Cure Light Wounds has TWO uses in one casting: (1) restore 1d6+1 HP, OR (2) cure paralysis — not both from one casting. Cannot exceed the subject's normal maximum HP. -->
 ### Cure Light Wounds
 
 Duration: Instant · Range: The caster or a creature touched
@@ -1303,12 +1397,16 @@ saving throws versus cold-based magical or breath attacks.
 - Cold-based damage: Is reduced by 1
 point per damage die rolled. (Each die inflicts a minimum of 1 hit point damage.)
 
+<!-- section: spell --><!-- interacts-with: Magic-User Hold Person (different duration: 1 turn/level vs 9 turns cleric) -->
+<!-- clarification: Cleric Hold Person lasts a FIXED 9 turns. Magic-User Hold Person (3rd level) lasts 1 turn per caster level. Both versions affect humans/demihumans/human-like monsters of 4+1 HD or less; undead are immune to both. -->
 ### Hold Person
 
 Duration: 9 turns · Range: 180’
 
 ## 2nd Level Spells
 
+<!-- section: spell --><!-- interacts-with: Spell Effects — Cumulative Effects, Combat Morale -->
+<!-- clarification: Bless only affects allies NOT YET IN MELEE at time of casting. Already-engaged characters do not benefit. The +1 to attack/damage/morale does not stack with other attack/damage bonus spells. -->
 ### Bless
 
 Duration: 6 turns Range: 60’ May be used in one of two situations:
@@ -1356,6 +1454,8 @@ saving throws versus fire-based magical or breath attacks.
 - Fire-based damage: Is reduced by 1
 point per damage die rolled. (Each die inflicts a minimum of 1 hit point damage.)
 
+<!-- section: spell --><!-- interacts-with: Magic — Casting Spells (freedom requirement) -->
+<!-- clarification: Any spell caster within the 15' silence area cannot cast spells. If cast ON a creature that fails its save, silence moves with it (no concentration required). If save succeeds, silence remains stationary. -->
 ### Silence 15’ Radius
 
 Duration: 12 turns · Range: 180’ A 15’ radius area is rendered utterly silent.
@@ -1541,6 +1641,8 @@ Neutral, XP 10 (13 if poisonous)
 snakes being poisonous.
 - When killed: Revert back to sticks.
 
+<!-- section: spell --><!-- interacts-with: Magic Jar, Invisible Stalker, Conjure Elemental, Turning the Undead -->
+<!-- clarification: Dispel Evil has three uses: (1) Ward via concentration — enchanted/undead entering range save vs spells or are banished/destroyed; (2) Instant single target — save at –2 penalty; (3) Instantly dispel a cursed item's hold. Caster must remain stationary for the ward. -->
 ### Dispel Evil
 
 Duration: Concentration (up to 1 turn) or instant (see below) · Range: 30’
@@ -1594,6 +1696,8 @@ Restrictions: The spell has no effect if cast underground.
 
 Duration: Until quest is completed / Instant (remove quest) Range: 30’
 
+<!-- section: spell --><!-- interacts-with: Neutralize Poison (can revive poison victims within 10 rounds), Damage and Death -->
+<!-- clarification: Raise Dead restores life if dead no longer than 4 days per caster level ABOVE 7th (10th level = 12 days). After raising: 1 HP, half move, cannot attack/cast/use class abilities for 2 full weeks — magical healing cannot shorten this. -->
 ### Raise Dead
 
 Duration: Instant Range: 120’
@@ -1634,10 +1738,14 @@ versus death, it dies instantly. Casting finger of death is a chaotic act; it wi
 
 ---
 
+<!-- section: spell -->
 # Magic-User Spells
+<!-- clarification: Arcane spells: normal or reversed form must be chosen at MEMORIZATION (not casting). A magic-user must memorize cure/cause variants separately if they want both. -->
 
 ## 1st Level Spells
 
+<!-- section: spell --><!-- interacts-with: Charm Monster (affects broader targets) -->
+<!-- clarification: Charm Person only affects humans, demihumans, or human-like monsters of 4+1 HD or less. Undead immune. Charmed creature will not obey suicidal/obviously harmful orders. Duration is indefinite — periodic saves at intervals based on INT score end the charm. -->
 ### Charm Person Duration: One or more days (see below)
 Range: 120’ A single human, demihuman, or human-like monster (see Persons in the Advanced Fantasy Referee’s Tome) must save versus spells or be charmed, as follows:
 - Friendship: The subject regards the
@@ -1711,6 +1819,8 @@ Reversed: Darkness
 Creates a 15’ radius area of magical blackness, preventing normal sight (but not
 infravision). Like light, it may alternatively be used to blind creatures or to dispel a light spell.
 
+<!-- section: spell -->
+<!-- clarification: Magic Missile hits automatically — no attack roll, no saving throw, line of sight required. Additional missiles: 3 at levels 6–10, 5 at levels 11–15. Multiple missiles can all target one creature or be split freely. -->
 ### Magic Missile
 
 Duration: 1 turn · Range: 150’ This spell conjures a glowing dart of energy that the caster may choose to shoot at a visible target within range.
@@ -1747,6 +1857,8 @@ inscribed on an object or surface can be understood.
 read a magical inscription using read magic, they are thereafter able to read that
 particular writing without recourse to the use of this spell.
 
+<!-- section: spell --><!-- interacts-with: Combat — Paralysed Opponents -->
+<!-- clarification: Sleep affects up to 2d8 HD of creatures of 4 HD or less, weakest first. A SINGLE creature of 4+1 HD can be targeted instead. Undead are IMMUNE. Sleeping creatures are helpless and can be killed instantly with a bladed weapon (see Paralysed Opponents rule). Slapping or wounding wakes a sleeping creature. -->
 ### Sleep
 
 Duration: 4d4 turns · Range: 240'
@@ -1829,6 +1941,8 @@ meaning of all thoughts even if they do not share the creature’s language.
 - Obstructions: The ability to perceive
 thoughts is obstructed by a thin layer of lead or by rock of 2’ thick or greater.
 
+<!-- section: spell --><!-- interacts-with: Detect Invisible, Invisibility 10' Radius -->
+<!-- clarification: Invisibility is PERMANENT until broken by attacking or casting a spell. Carried light sources remain visible. Items put down become visible. Cannot be targeted by attacks requiring line of sight while invisible. -->
 ### Invisibility
 
 Duration: Permanent (but may be broken, see below) Range: 240’
@@ -1946,6 +2060,8 @@ it or to change to another subject.
 - Obstructions: The spell is blocked by
 a thin layer of lead or by rock of 2’ thick or greater.
 
+<!-- section: spell -->
+<!-- clarification: Dispel Magic affects a 20' CUBE area, not a single target. Magic ITEMS are unaffected. Failure chance is 5% per level the original caster exceeds the dispeller's level; at equal/higher level, succeeds automatically. -->
 ### Dispel Magic
 
 Duration: Instant · Range: 120’ Dispel magic ends spell effects within a
@@ -1956,6 +2072,8 @@ of the effect to be dispelled is higher than the level of the caster of dispel m
 there is a 5% chance per level difference that the attempt to dispel will fail.
 - Magic items: Are unaffected.
 
+<!-- section: spell -->
+<!-- clarification: Fireball detonates in a 20' radius sphere. OSE is silent on whether it expands to fill a confined space (blowback); ruling required if relevant. Damage is 1d6 per caster level; save vs spells for half. -->
 ### Fire Ball
 
 Duration: Instant · Range: 240’ Flame streaks towards a point within range and detonates in a 20’ radius sphere.
@@ -1971,6 +2089,9 @@ The subject gains the ability to fly through the air.
 - Free movement: Is possible in any
 direction, including the ability to levitate and to hover in mid-air.
 
+<!-- section: spell --><!-- interacts-with: Spell Effects — Cumulative Effects -->
+<!-- clarification: Haste doubles movement and attacks ONLY — spell casting and magic device use are NOT doubled. Does not stack with other effects that double attacks. OSE lists no aging side effect (unlike AD&D). -->
+<!-- ambiguity: Whether haste stacks with a fighter's multiple attacks (if any house rule grants them) is silent — referee ruling required. -->
 ### Haste
 
 Duration: 3 turns · Range: 240’ Up to 24 creatures in a 60’ diameter area
@@ -2113,6 +2234,8 @@ versus spells to resist the teleportation.
 
 Duration: Permanent Range: 120’
 
+<!-- section: spell --><!-- interacts-with: Polymorph Self -->
+<!-- clarification: Polymorph Others is a TRUE transformation — subject acquires all special abilities AND behaviour/intelligence of new form. Fails if new form HD exceeds twice subject's HD. Subject retains same HP. Cannot duplicate a specific individual. -->
 ### Polymorph Others
 
 Duration: Permanent Range: 60’
@@ -2157,6 +2280,8 @@ Cease to be veiled.
 - Dismissing: The caster may dismiss
 the illusion in its entirety at any time.
 
+<!-- section: spell --><!-- interacts-with: Polymorph Others -->
+<!-- clarification: Polymorph Self differs from Polymorph Others — the caster retains their OWN intelligence, hit points, saving throws, and attack probabilities. Physical capabilities of the new form are gained; non-physical special abilities (immunities, breath weapons, spellcasting) are NOT gained. Cannot cast spells while polymorphed. HD of new form cannot exceed caster's level. -->
 ### Polymorph Self
 
 Duration: 6 turns +1 per level · Range: The caster
@@ -2434,6 +2559,8 @@ up to 20’ per round, in whatever direction the caster wishes (including vertic
 save versus spells to resist the spell.
 - Concentration: If the caster’s concentration is broken, the target will fall.
 
+<!-- section: spell -->
+<!-- clarification: Teleport risk is based on knowledge (Scant/Moderate/Exact). Too High = fall from 1d10×10'. Too Low = instant death (inside ground). Cannot teleport blind to unknown coordinates. Unwilling subjects save vs spells. -->
 ### Teleport
 
 Duration: Instant · Range: 10’ The caster or a chosen creature vanishes and reappears at a location of the caster’s choosing.
@@ -2741,6 +2868,8 @@ the party as a whole is determined by the speed of the slowest member.
 
 ## Measurements 
 
+<!-- section: reference-table -->
+<!-- clarification: TURN = 10 minutes of game time (dungeon exploration unit). ROUND = 10 seconds of game time (combat unit). 60 rounds = 1 turn. Spell durations in "turns" are 10-minute increments; durations in "rounds" are 10-second increments. Always confirm which unit a spell duration uses. -->
 ### Time: Rounds and Turns
 
 Aside from everyday time increments (minutes, hours, days, and so on), the following special units are used in the game.
@@ -2815,6 +2944,8 @@ Up to 800 coins Up to 1,600 coins
 
 ---
 
+<!-- section: procedural-rule -->
+<!-- clarification: Ability checks are OPTIONAL and referee-called. Roll 1d20 ≤ ability score to succeed. Modifiers –4 (easier) to +4 (harder). Natural 1 always succeeds; natural 20 always fails regardless of modifier. -->
 # Ability Checks 
 
 The referee may use a character’s ability scores to determine the character’s chance of succeeding at various challenging tasks.
@@ -2835,7 +2966,9 @@ A natural 1 should be treated as a success and a natural 20 treated as a failure
 
 ---
 
+<!-- section: procedural-rule -->
 # Saving Throws 
+<!-- interacts-with: Ability Scores WIS (magic saves modifier), individual class saving throw tables, Monster Saving Throws table, Combat (spell disruption) -->
 
 All characters and monsters can make saving throws to avoid the full effects of certain magical or special attacks.
 
@@ -2867,17 +3000,23 @@ greater than or equal to the saving throw value is a success.
 - Lower: A result of less than the saving
 throw value is a failure.
 
+<!-- section: procedural-rule -->
+<!-- clarification: There are exactly TWO outcomes for a successful save: (1) DAMAGING effects — damage is halved; (2) NON-DAMAGING effects — the effect is entirely avoided/negated. A successful save never halves a non-damage effect (e.g. Hold Person either takes hold or it doesn't). -->
 ## Successful Saves 
 Damaging effects: A successful save against an effect that causes damage means that the damage is halved.
 Other effects: A successful saving throw against an effect that does not cause damage means the effect has been entirely avoided or negated.
 
+<!-- section: procedural-rule --><!-- interacts-with: Poison rules, Cleric Holy Resistance (disease not poison) -->
+<!-- clarification: Poison damage from a physical bite/attack is separate from poison save results — the bite damage is taken regardless of the save. The save determines only the POISON effect (death or HP damage). -->
 ## Saving Throws Versus Poison 
 Failure: A failed save against poison is usually fatal.
 Damage: If a poisonous attack also inflicts damage, the damage is not affected by the success or failure of the save.
 
 ---
 
-# Damage, Healing, and Death Damage 
+<!-- section: procedural-rule -->
+# Damage, Healing, and Death
+<!-- interacts-with: Saving Throws, Combat Rolling for Damage, Raise Dead, Neutralize Poison -->
 All characters and monsters have a hit point total, which represents their ability
 to avoid death. Many attack forms, including attacks with weapons in combat, subtract hit points from this pool.
 
@@ -2893,6 +3032,9 @@ If the rest is interrupted, the character or monster will not heal that day.
 Healing may also occur through magic, such as potions or spells. This kind of
 healing is instantaneous. Magical healing and natural healing can be combined.
 
+<!-- section: procedural-rule -->
+<!-- clarification: OSE uses DEATH AT 0 HP — there are no negative HP / death's door rules unless the referee has added a house rule. A character at exactly 0 HP is dead, not unconscious. -->
+<!-- silent-rule: OSE does not include stabilisation, death saves, or "dying" states. If the referee wants a death's-door mechanic, it is a house rule. -->
 ## Death 
 A character or monster reduced to 0 hit points or less is killed.
 
@@ -2901,6 +3043,8 @@ A character or monster reduced to 0 hit points or less is killed.
 If a character is killed by a destructive spell or special attack (e.g. a lightning bolt
 spell or a dragon’s breath), their equipment is assumed to be destroyed.
 
+<!-- section: procedural-rule -->
+<!-- clarification: Magic item saves use the CHARACTER's saving throw values (not the item's). Magical weapons/armour apply their bonus to this save. This mechanic is optional per referee. -->
 ### Destruction of Magic Items
 
 Magic items in the possession of a character who is killed by a destructive spell
@@ -2912,6 +3056,7 @@ in combat (e.g. magical weapons and armour) may also apply this bonus to the sav
 
 ---
 
+<!-- section: procedural-rule -->
 # Hazards and Challenges 
 
 ## Climbing
@@ -2923,6 +3068,7 @@ to surprise opponents (see Encounters, p228), because the light gives their pres
 
 When characters are climbing in a difficult or tense situation, the referee may require an ability check against Dexterity.
 
+<!-- section: procedural-rule --><!-- clarification: Fall damage is 1d6 per 10' fallen onto a hard surface. No saving throw listed — damage is automatic. Referee may rule on soft landings (water, hay, etc.). -->
 Falling from a height onto a hard surface inflicts 1d6 damage per 10’ fallen.
 
 ### Sheer Surfaces
@@ -2988,6 +3134,8 @@ decrease the chance of wandering monsters being encountered.
 
 ---
 
+<!-- section: procedural-rule -->
+<!-- interacts-with: Encounters, Time (turns and rounds), Wandering Monsters, Resting, Searching -->
 # Dungeon Adventuring 
 
 ## Sequence of Play Per Turn
@@ -3044,6 +3192,8 @@ In familiar areas: When PCs are moving through dungeon areas with which they
 are familiar, the referee may allow them to move at a faster rate. For example, the
 referee might allow PCs to move at three times their base movement rate per turn, when moving through familiar areas.
 
+<!-- section: procedural-rule --><!-- interacts-with: Thief Skills (Find/Remove Traps), Dungeon — Doors -->
+<!-- clarification: Searching takes one TURN (10 minutes). The referee always rolls secretly. Each character gets ONE attempt per area or item — a failed roll cannot be retried by the same character. The 1-in-6 chance is for secret doors and room traps; treasure traps use the thief's class-specific skill percentage instead. -->
 ## Searching
 The following stipulations apply to searching for secret doors, room traps, and treasure traps.
 Time: Searching takes one turn.
@@ -3064,6 +3214,8 @@ chests, locks) for traps. See Searching.
 Chance of finding: The chance of finding treasure traps, if a character is searching
 in the right location, is noted in the character’s class description.
 
+<!-- section: procedural-rule -->
+<!-- clarification: In the DUNGEON, rest is required once per hour (every 6 turns). Penalty for skipping: –1 to attack and damage until one full turn of rest is taken. In the WILDERNESS, rest is one full day per six days of travel; penalty is the same –1 to hit and damage. These are separate requirements — dungeon hourly and wilderness daily rest are not interchangeable. -->
 ## Resting 
 Frequency of rest: Characters must rest for one turn every hour in the dungeon.
 Penalty for not resting: If characters press on without resting, they suffer a
@@ -3090,7 +3242,9 @@ Distance: Wandering monsters are encountered 2d6 × 10 feet away, moving in the 
 
 ---
 
+<!-- section: procedural-rule -->
 # Wilderness Adventuring 
+<!-- interacts-with: Encounters, Wandering Monsters, Overland Travel, Resting -->
 ## Sequence of Play Per Day 
 1. Decide course: The players decide on their course of travel for the day.
 2. Losing direction: The referee determines whether the party gets lost.
@@ -3146,6 +3300,8 @@ Frequency of rest: Characters must rest for one day per six days of travel.
 Penalty for not resting: If characters press on without resting, they suffer a
 penalty of –1 to hit and damage rolls until they have rested for one full day.
 
+<!-- section: procedural-rule -->
+<!-- clarification: Base move ÷ 5 = miles per day. A character with 120' base move travels 24 miles/day. Terrain modifiers: broken/desert/forest/hills –33%; jungle/mountains/swamp –50%; maintained roads +50%. Forced march adds 50% distance but requires a full day of rest afterward. -->
 ## Overland Travel 
 Miles per day: The number of miles a character can travel in a day is determined by dividing their base movement
 rate by five. For example, a character whose base movement rate is 120’ could travel up to 24 miles in a day.
@@ -3188,7 +3344,10 @@ side is surprised (see Encounters, p228), this is reduced to 1d4 × 10 yards.
 
 ---
 
+<!-- section: procedural-rule -->
 # Waterborne Adventuring 
+<!-- interacts-with: Encounters, Wandering Monsters, Wilderness — Overland Travel -->
+<!-- clarification: In wilderness and waterborne adventuring, movement and encounter distances are measured in YARDS (tripled from dungeon feet). Spell effect areas remain in FEET. -->
 
 ## Sequence of Play Per Day
 1. Decide course: The players decide on their course of travel for the day.
@@ -3287,7 +3446,10 @@ dangers (rocks, cliffs, etc.), this is automatically successful; otherwise there
 
 ---
 
+<!-- section: procedural-rule -->
 # Encounters 
+<!-- interacts-with: Dungeon Adventuring — Wandering Monsters, Combat — Combat Sequence, Morale -->
+<!-- clarification: The encounter SEQUENCE is: (1) Surprise check; (2) Encounter distance; (3) Initiative (non-surprised sides); (4) Actions; (5) Conclusion (one full turn passes). One complete encounter = one turn of game time. -->
 An encounter begins when the characters stumble onto a monster, either because
 the referee has planned an encounter in the area the PCs are exploring or because
 a random die roll indicates an encounter (see Wandering Monsters, p221).
@@ -3299,6 +3461,8 @@ a random die roll indicates an encounter (see Wandering Monsters, p221).
 4. Actions: Any sides that are not surprised decide how they will respond to the encounter. The encounter is played out accordingly.
 5. Conclusion: One turn has passed.
 
+<!-- section: procedural-rule --><!-- interacts-with: Ranger Awareness, Dungeon — Listening at Doors -->
+<!-- clarification: Surprise rolled on 1d6; 1–2 = surprised. Surprised side CANNOT ACT that round. Both sides surprised = momentary confusion, no advantage. Rangers surprised only on 1. Non-surprised side gets a free action round before normal combat begins. -->
 ## Surprise Checks
 
 Each side that is not already aware of the other’s presence rolls 1d6.
@@ -3366,6 +3530,8 @@ other may decide to pursue. See Evasion.
 - Parley: PCs may attempt to communicate with monsters. Opening an encounter in this way can influence the monsters’ behaviour (see Monster Actions). If
 both sides decide to talk, the negotiation may be role-played.
 
+<!-- section: procedural-rule --><!-- interacts-with: Encounters — Pursuit, Wilderness Evasion, Waterborne Evasion -->
+<!-- clarification: Evasion is only possible BEFORE combat begins. Once combat has started, characters must use the Retreat/Fighting Withdrawal rules. In the dungeon: if fleeing side is faster, evasion automatically succeeds. If not faster, a pursuit occurs. Dropping treasure (3-in-6) or food may stop a pursuing monster. -->
 ## Evasion
 
 If one side wishes to avoid an encounter, it may attempt to flee. This is called evasion and is only possible before combat
@@ -3472,7 +3638,10 @@ to rest, regroup, clean weapons, bind wounds, and so on, afterwards.
 
 ---
 
+<!-- section: combat-rule -->
 # Combat
+<!-- interacts-with: Encounters — Initiative, Morale, Magic — Casting Spells, Saving Throws -->
+<!-- clarification: The full combat sequence per round is: (1) Declare spells and melee movement; (2) Initiative (each SIDE rolls 1d6); (3) Winning side acts — in order: monster morale, movement, missile attacks, spell casting, melee attacks; (4) Other sides act in initiative order. This is GROUP initiative — all members of a side act on the same initiative result. -->
 
 ## Combat Sequence Per Round
 
@@ -3489,11 +3658,16 @@ to rest, regroup, clean weapons, bind wounds, and so on, afterwards.
 ## Declare Spells and Melee Movement 
 Players must inform the referee if they intend to cast a spell or move when in melee. Other actions need not be declared.
 
+<!-- section: combat-rule -->
+<!-- clarification: Initiative is per SIDE (group initiative), not per individual. All members of the winning side act before the losing side — including all missile attacks, spells, and melee. On a TIE the referee chooses: re-roll, or resolve simultaneously (mutual kills possible). -->
+<!-- ambiguity: The optional individual initiative rule (DEX modifier applies) is NOT described in this file — it is referenced in Ability Scores. If individual initiative is in use, confirm with referee. -->
 ## Initiative 
 Roll 1d6: For each side at the start of each round.
 Winner: The side with the highest roll acts first. Other sides act in order from highest to lowest roll.
 Ties: Either both sides may roll again or actions on both sides may be resolved simultaneously. (This means that both sides may inflict deadly blows on each other!)
 
+<!-- section: combat-rule --><!-- interacts-with: Equipment — Weapon Qualities (Slow), Initiative -->
+<!-- clarification: Slow weapon users act LAST in the round regardless of initiative result. If multiple characters use slow weapons, they act simultaneously (or in the order the referee determines). A slow weapon user who wins initiative still acts last. -->
 ## Slow Weapons
 
 Combatants attacking with two-handed melee weapons (and some missile weapons—as indicated in the equipment
@@ -3506,6 +3680,8 @@ description) always act last in the round, as if they had lost initiative.
 Movement rate: Combatants can move up to their encounter movement rate each round.
 Maximum duration: Combatants may move at this rate for at most 60 rounds.
 
+<!-- section: combat-rule -->
+<!-- clarification: FIGHTING WITHDRAWAL = backward at up to half encounter move, no penalty to opponent. RETREAT = full encounter move, opponent gets +2 to all attacks against you and ignores your shield AC bonus this round; you cannot attack. These are the ONLY legal movements while in melee. -->
 ### In Melee
 
 When in melee with a foe, only the following forms of movement are possible:
@@ -3534,6 +3710,8 @@ Partial cover: The referee may apply attack penalties of between –1 and –4 (
 a small table might incur a –1 penalty;
 dense woods might incur a –4 penalty).
 
+<!-- section: combat-rule --><!-- interacts-with: Magic — Casting Spells, Combat — Disrupting Spells -->
+<!-- clarification: Casting is the sole action for the round — no movement or attacks. Spell must be declared before initiative is rolled. If caster loses initiative AND is hit or fails a save before their turn, the spell is disrupted and lost. -->
 ## Spell Casting
 
 ### Attack Rolls
@@ -3551,6 +3729,8 @@ No movement: The spell caster cannot move and cast a spell in the same round.
 Line of sight: Unless noted in a spell’s description, the intended target (a specific
 monster, character, or area of effect) must be visible to the caster.
 
+<!-- section: combat-rule --><!-- interacts-with: Combat Initiative, Magic — Casting Spells -->
+<!-- clarification: Disruption requires BOTH: (1) caster lost initiative AND (2) was successfully hit OR failed a save before their turn. A MISSED attack does NOT disrupt. Spell is lost from memory. -->
 ### Disrupting Spells
 
 If a spell caster loses initiative and is successfully attacked or fails a saving throw
@@ -3562,6 +3742,8 @@ Are possible when opponents are 5’ or less from each other.
 ## Other Sides Act 
 Repeat steps 3a to 3e for each side, in order of initiative (highest first).
 
+<!-- section: combat-rule -->
+<!-- clarification: Natural 20 always hits regardless of AC. Natural 1 always misses regardless of THAC0. These are the only automatic results — there are no other critical hit or fumble effects in base OSE unless the referee has added house rules. -->
 ## Attacking 1s and 20s
 
 Natural 20 attack rolls always hit. Natural 1 attack rolls always miss.
@@ -3579,6 +3761,8 @@ Some monsters have multiple attacks.
 
 Movement and attacking may be combined in the same round.
 
+<!-- section: combat-rule --><!-- interacts-with: Equipment Weapon Combat Stats, Ability Scores STR -->
+<!-- clarification: STR applies to melee attack AND damage. DEX applies to missile attack only, NOT damage. Minimum 1 damage on any successful hit even after negative modifiers. -->
 ## Rolling for Damage
 
 PC attacks: Inflict the damage indicated for the weapon in the equipment lists. Damage of melee attacks is modified by STR.
@@ -3587,8 +3771,10 @@ Minimum damage: An attack which hits always deals at least one point of damage,
 even when damage modifiers reduce the number rolled to 0 or less.
 Death: A character or monster reduced to 0 hit points or less is killed.
 
+<!-- section: combat-rule -->
 ## Other Combat Issues 
 ### Blindness 
+<!-- clarification: A blind character CANNOT ATTACK. Blindness also prevents the character from benefiting from shield AC bonus and any AC bonus dependent on seeing the opponent — referee ruling required on exact AC impact, as OSE specifies only the attack restriction. -->
 A blind character is unable to attack.
 
 ### Bombing 
@@ -3598,6 +3784,8 @@ Chance to hit: 16 or higher on 1d20.
 Affected area and damage: Depend on the size of the bomb—larger creatures can carry larger bombs. For example, a
 bomb from a flying creature able to carry a human might inflict 2d6 damage to all creatures hit in a 10’ × 10’ area.
 
+<!-- section: combat-rule --><!-- interacts-with: Equipment — Weapon Qualities (Brace, Charge) -->
+<!-- clarification: Charging grants +2 attack, –1 AC for the round, requires 20' clear run. Braced weapons (pole arm, spear) deal DOUBLE damage to a charging character. Lance Charge quality (double damage on horseback 60'+) is a separate rule from this general charging action. -->
 ### Charging
 
 Once per combat, a character may charge into melee and attack, as follows:
@@ -3611,6 +3799,8 @@ this round.
 - Weapons that may be braced against
 charging monsters are also effective against charging characters.
 
+<!-- section: combat-rule --><!-- interacts-with: Sleep spell, Hold Person, Hold Monster -->
+<!-- clarification: Paralysed/helpless opponents are auto-hit in MELEE only — no attack roll needed, only roll damage. This also applies to sleeping creatures (see Sleep spell clarification). Ranged attacks against helpless targets still require a normal attack roll. -->
 ### Paralysed Opponents 
 Helpless opponents, such as those magically paralysed or frozen, can be automatically hit in melee. Only a roll for damage is required.
 
@@ -3629,6 +3819,8 @@ should be penalised.
 - Missile weapons: Usually do not work
 at all underwater.
 
+<!-- section: procedural-rule --><!-- interacts-with: Retainers — Loyalty Checks -->
+<!-- clarification: MORALE (monsters/NPCs) and LOYALTY (retainers) are SEPARATE systems. Morale uses a 2d6 roll vs the monster's morale rating. Retainers do NOT make morale checks in combat — they use the loyalty check system instead. -->
 ## Morale
 In combat, the referee decides whether monsters or NPCs surrender or run away.
 The following system may be utilised.
@@ -3647,6 +3839,8 @@ The monster will continue to fight.
 Two successes: If a monster makes two successful morale checks in an encounter,
 it will fight until killed, with no further checks necessary.
 
+<!-- section: procedural-rule -->
+<!-- clarification: Two SUCCESSFUL morale checks (chose to keep fighting) means monster fights to the death — no further checks needed. Morale 2 = never fights (no check). Morale 12 = always fights (no check). Adjustments never apply to morale 2 or 12. -->
 ### When to Check Morale 
 The referee usually makes a morale check for monsters under two conditions:
 First death on side: The first time one of their number is killed in battle.
@@ -3664,7 +3858,9 @@ check may be required in extreme peril (see Retainers, p110).
 
 ---
 
+<!-- section: reference-table -->
 # Combat Tables 
+<!-- interacts-with: Combat — Attack Rolls, Class level progression tables (character THAC0), Monster descriptions (monster HD) -->
 These tables list the attack probabilities for all monsters and characters and the saving throw values used by monsters and normal humans.
 
 ## Normal Humans 
@@ -3682,6 +3878,8 @@ A 5th level fighter attacks a monster with AC 4. The attack is resolved as follo
 5. As AC 2 is better than the monster’s Armour Class (4), the attack hits!
 6. Damage is rolled and the result subtracted from the monster’s current hit point total.
 
+<!-- section: reference-table -->
+<!-- clarification: THAC0 shortcut: minimum roll to hit = THAC0 − target AC. Example: THAC0 17, target AC 4 → need 13+. Bonus HD monsters (e.g. 2+1 HD) attack as if 1 HD higher — a 2+1 HD monster uses THAC0 17 [+2], not 18 [+1]. Characters use their class THAC0 from the level progression table, not the monster HD row. -->
 ## Attack Rolls Using THAC0 
 Instead of referring to the attack matrix, attacks may be resolved using THAC0 directly. A THAC0 score denotes the attack roll required to hit AC 0. The attack
 roll required to hit opponents of other AC scores can be calculated by subtracting the target AC from the THAC0. For
@@ -3704,7 +3902,9 @@ Monsters: use their own saving throw row. Characters: use class description. Nor
 
 ---
 
+<!-- section: reference-table -->
 # Combat Tables
+<!-- clarification: Characters use the row matching their class THAC0. Monsters use the row matching their HD. Bonus HD monsters (e.g. 2+1) use the row for 1 HD higher. Normal Humans use the NH row. -->
 
 ## Attack Matrix
 
@@ -3731,6 +3931,8 @@ Monsters: use their own saving throw row. Characters: use class description. Nor
 - **Characters:** use row for their THAC0 from class description.
 - **Normal humans:** use NH row.
 
+<!-- section: reference-table --><!-- interacts-with: Saving Throws, individual monster descriptions -->
+<!-- clarification: This table is for MONSTERS only. Characters always use their class saving throw table, not this one. Normal humans (NPC non-adventurers) use the NH row. -->
 ## Monster Saving Throws
 
 | Hit Dice | Death | Wands | Paralysis | Breath | Spells |
@@ -3747,6 +3949,7 @@ Monsters: use their own saving throw row. Characters: use class description. Nor
 
 Characters use their own class saving throw table, not this one.
 
+<!-- section: reference-table --><!-- clarification: Formula: minimum roll to hit AC X with THAC0 Y = Y − X. Roll 1d20; if result ≥ (Y − X) the attack hits. -->
 ## THAC0 Quick Reference
 
 Minimum roll to hit AC X with THAC0 Y = **Y − X**

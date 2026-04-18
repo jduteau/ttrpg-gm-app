@@ -496,6 +496,58 @@
   font-family: monospace;
 }
 
+/* ── World state delta block ──────────────────────────────────────────────── */
+.world-delta-block {
+  border: 1px solid var(--border-dim);
+  border-left: 3px solid var(--campaign-color, var(--accent-arbiter));
+  border-radius: 2px;
+  background: var(--bg-panel-tint);
+  padding: 0 32px;
+  max-width: 880px;
+  width: 100%;
+  margin: 0 auto;
+  animation: fadeUp 0.25s ease both;
+}
+
+.world-delta-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: inherit;
+}
+
+.world-delta-icon { font-size: 0.9rem; flex-shrink: 0; }
+
+.world-delta-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--campaign-color, var(--accent-arbiter));
+  flex: 1;
+}
+
+.world-delta-chevron { font-size: 0.6rem; color: var(--text-dim); flex-shrink: 0; }
+
+.world-delta-body {
+  border-top: 1px solid var(--border-dim);
+  padding: 12px 0 16px;
+}
+
+.world-delta-content {
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+
 /* ── End session UI ───────────────────────────────────────────────────────── */
 .chat-header-actions {
   display: flex;
@@ -559,7 +611,8 @@
   .message,
   .arbiter-block,
   .dice-roll-block,
-  .state-block {
+  .state-block,
+  .world-delta-block {
     max-width: none;
   }
 
@@ -569,6 +622,7 @@
 
   .arbiter-block,
   .state-block,
+  .world-delta-block,
   .dice-roll-block {
     margin-left: 20px;
     margin-right: 20px;
@@ -624,6 +678,7 @@
   .message-archive,
   .arbiter-block,
   .state-block,
+  .world-delta-block,
   .dice-roll-block {
     margin-left: 14px;
     margin-right: 14px;
@@ -632,6 +687,7 @@
   .message-archive,
   .arbiter-block,
   .state-block,
+  .world-delta-block,
   .dice-roll-block {
     padding-left: 16px;
     padding-right: 16px;

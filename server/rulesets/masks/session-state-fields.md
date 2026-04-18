@@ -46,15 +46,11 @@ When writing the session state snapshot, use exactly this format and populate al
 - Cypher → John: YES *(pushes Mundane down, Danger up)*
 - [Any additional NPC influence relationships]
 
-## NPC Roster
-- **[Name]**: [role] | influence over [heroes] | pushes [Label] [direction] | wants [X] | doesn't know [Y]
-- [Repeat for each active NPC]
-
 ## Current Situation
 [One sentence — where are we right now, what is immediately at stake]
 
 ## Open Threads
-1. [Thread — one line]
+1. [immediate thread affecting next session — one line]
 2. [Repeat as needed]
 
 ## Last Session

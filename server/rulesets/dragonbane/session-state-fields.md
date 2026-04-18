@@ -68,15 +68,15 @@ When a Session State block is present at session start, read it carefully before
 **Where We Left Off**
 [Exact location, immediate situation, and what the character was about to do. Be specific — this sets the opening scene.]
 
-**The Story So Far** *(cumulative — add each session, never remove)*
-- [bullet]
-- [bullet]
+**Active Quests & Immediate Priorities**
+- [Current quest/goal] | Next Step: [specific immediate action]
+- [Time-sensitive matter] | Urgency: [deadline or consequence]
 
-**Active Quests & Hooks**
-- [Quest/hook] | Source: [x] | Status: [next step]
+**Current NPC Relationships**
+- **[Name]**: [immediate disposition / what they'll do if encountered next session]
 
-**NPC Status**
-- **[Name]**: [relationship] | [location/status] | [notes]
+**Recent Events Summary**
+[2-3 sentences about what happened this session and immediate consequences]
 
 **Open Questions & Mysteries**
 - [question or mystery]

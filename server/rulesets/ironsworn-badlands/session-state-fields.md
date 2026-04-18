@@ -24,12 +24,11 @@ When writing the session state snapshot, use exactly this format and populate al
 ## Current Position
 [Where Jake is, time of day, immediate situation in one or two sentences.]
 
-## World State
-- [NPC or faction name]: [Current status, what they know, what they want]
-- [Repeat for all relevant NPCs and factions]
+## Immediate NPC Status
+- [NPC currently nearby/relevant]: [immediate disposition, current knowledge of Jake]
 
 ## Open Threads
-1. [Thread — one line]
+1. [immediate thread affecting next session — one line]
 2. [Repeat as needed]
 
 ## Background: Cassidy

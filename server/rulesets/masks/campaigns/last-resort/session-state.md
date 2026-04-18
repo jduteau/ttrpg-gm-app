@@ -43,32 +43,8 @@
 - Meridian → John: YES *(pushes Mundane up, Danger down)*
 - Overwatch operative → John: YES *(pushes Mundane down, Danger up — she called you a child who doesn't belong here and you accepted it)*
 
-## NPC Roster
-- **Cypher**: veteran team leader, older generation | influence over all three heroes | pushes John's Mundane down, Danger up | wants the young team effective — genuinely revising his assessment | doesn't know the name of Petra's informant yet | acknowledged the Kelso operation obliquely; has full Hale file ready for morning briefing; noticed John's arm before John admitted it
-- **Meridian**: Cypher's former apprentice, independent operator, unofficial second mentor to John | influence over John (adult — automatic) | pushes Mundane up, Danger down | wants John to become something Cypher couldn't | doesn't know about the arm yet — when he finds out, it won't be from John | the accounting speech Cypher quoted was Meridian's originally; Cypher has been sitting with it for fifteen years
-- **Martin Hale**: university funding board, Null operative | influence over none confirmed | wants Petra's full architecture | doesn't know the compiler is destroyed | was present at Kelso during the operation; Cypher has full financials; morning briefing
-- **Dr. Elena Vasquez**: Halcyon Tech cryptography, Petra's former mentor | influence over Petra (untracked but emotionally real) | wants to be left out of this | on a train to Portsmith; gave the team the drive
-- **The Overwatch operative**: secured, handed to transit police | influence over John | pushes Mundane down, Danger up | credential likely killed by Null after capture; wrist device status uncertain
-- **Petra's informant**: someone from Petra's old school | influence unknown | fed Null information for eight months; Petra has the name; Cypher doesn't yet
-- **Dev (Devika)**: civilian asset, sixteen years old | no formal influence | wants justice for her brother Rohan's stolen research | doesn't know the full scope of what she helped stop | three weeks of Kelso surveillance data, independent network access, homemade directional antenna; Petra's assessment — better than most of Cypher's people; has a team earpiece; will be around
-- **Rohan (Dev's brother)**: Halcyon U postgrad, materials science | no influence | wants his research back, his reputation restored | doesn't know about Dev's operation | on academic probation; thesis work stolen by Null over six months; thread to resolve when this is done
-
 ## Current Situation
 Six AM briefing at Cypher's safehouse — Cypher has the full Hale file, approximately sixty hours remain, the suppression network still functions, and the endgame begins now.
-
-## Open Threads
-1. The suppression network — sixty hours, still active, three anchor points plus Kelso hub
-2. Martin Hale — full file incoming, still free, was at Kelso during the operation
-3. Kelso Logistics — hub located, partially mapped, eleven-plus operatives, now missing a technician and a keycard
-4. The captured keycard — sub-basement access, unknown full capabilities
-5. The captured wrist device — credentials interface, status uncertain after operative capture
-6. Petra's informant — she has the name, Cypher doesn't
-7. John's arm — treated, holding, not resolved
-8. Sam's file — acquisition priority primary, three years of surveillance, unprocessed
-9. Cypher's accounting speech — Meridian's words, fifteen years carried, aimed at John deliberately
-10. Dev and Rohan — promises made, thread to honour
-11. Meridian — doesn't know about the arm yet
-12. Petra and the compiler — she took something back tonight; what that costs her is still coming
 
 ## Last Session
 Last Resort located the Null's central hub at Kelso Logistics without Cypher's knowledge, made contact with civilian asset Dev, infiltrated the sub-basement via freight tunnel, and destroyed the Protocol Harvest collection sweep compiler. John's arm worsened during a takedown. The team returned to the safehouse, told Cypher everything, and is now forty minutes from a full briefing on Martin Hale.

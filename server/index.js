@@ -372,6 +372,14 @@ function hasSessionState(campaignId) {
   return content.length > 0 && !content.startsWith('<!--');
 }
 
+function hasWorldState(campaignId) {
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  const p = join(RULESETS_DIR, rulesetId, 'campaigns', campId, 'world-state.md');
+  if (!existsSync(p)) return false;
+  const content = readFileSync(p, 'utf-8').trim();
+  return content.length > 0 && !content.startsWith('<!--');
+}
+
 function loadSharedFile(filename) {
   const p = join(__dirname, filename);
   return existsSync(p) ? readFileSync(p, 'utf-8').trim() : null;
@@ -406,13 +414,19 @@ function loadSystemPrompt(campaignId, contextFiles = []) {
     parts.push(`\n\n---\n# ${campaign?.name ?? campId}\n\n${campaignPrompt}`);
   }
 
-  // 5. Restored session state (current campaign state — highest priority)
+  // 5. World state (accumulated facts, locations, NPCs, events)
+  if (hasWorldState(campaignId)) {
+    const worldState = readCampaignFile(campaignId, 'world-state.md');
+    parts.push(`\n\n---\n# World State\n\nThis is the accumulated world state containing established facts, locations, NPCs, and events from previous sessions. Use this as the foundation for consistency and continuity.\n\n${worldState}`);
+  }
+
+  // 6. Restored session state (current campaign state — highest priority)
   if (hasSessionState(campaignId)) {
     const state = readCampaignFile(campaignId, 'session-state.md');
     parts.push(`\n\n---\n# Session State (Restored)\n\nThis is the current campaign state from the end of the last session. Treat it as authoritative.\n\n${state}`);
   }
 
-  // 6. Selected modules and references
+  // 7. Selected modules and references
   for (const filePath of contextFiles) {
     const content = readCampaignFile(campaignId, filePath);
     if (content) parts.push(`\n\n---\n# ${labelFromFilename(filePath)}\n\n${content}`);
@@ -443,6 +457,23 @@ function saveSessionState(campaignId, stateContent) {
   }
 
   writeFileSync(statePath, stateContent, 'utf-8');
+}
+
+function saveWorldState(campaignId, worldContent) {
+  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
+  const campaignPath = join(RULESETS_DIR, rulesetId, 'campaigns', campId);
+  const worldPath    = join(campaignPath, 'world-state.md');
+  const backupDir    = join(campaignPath, 'world-backups');
+  mkdirSync(backupDir, { recursive: true });
+
+  // Archive current world state before overwriting
+  if (existsSync(worldPath)) {
+    const ts = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
+    const backupPath = join(backupDir, `world-state-${ts}.md`);
+    copyFileSync(worldPath, backupPath);
+  }
+
+  writeFileSync(worldPath, worldContent, 'utf-8');
 }
 
 // ── Tools ─────────────────────────────────────────────────────────────────────
@@ -877,7 +908,59 @@ app.post('/api/sessions/:sessionId/end', async (req, res) => {
 
     send({ state_done: true, content: stateContent });
 
-    // ── Phase 2: Session report ──────────────────────────────────────────────
+    // ── Phase 2: World state delta ───────────────────────────────────────────
+    send({ world_delta_start: true });
+
+    const worldDeltaHistory = [...baseHistory, {
+      role: 'user',
+      content: `Review the session transcript and generate a World State Delta. 
+
+Err heavily on the side of inclusion — capture everything that was established, implied, or could become relevant later, even if it seems throwaway. When in doubt, include it.
+
+For each entry record:
+- The fact itself
+- Which session established it [S#] 
+- Category: LOCATIONS | NPCS | FACTIONS | PARTY | LORE | OPEN THREADS
+
+Include:
+- Named or described locations, even briefly mentioned ones
+- Any NPC, named or unnamed but notable (the stable owner, the adjuster)
+- Prices, distances, timeframes mentioned in passing
+- Rumors, secondhand information (flag as UNVERIFIED)
+- Anything the party did that others might remember
+- Unresolved questions or hooks, even if you didn't intend them as hooks
+
+Do not summarize or collapse entries. One fact per line.
+
+Output only the world state delta — no other commentary.`,
+    }];
+
+    let worldDeltaContent = '';
+    try {
+      const worldDeltaStream = anthropic.messages.stream({
+        model:      'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system:     systemPrompt,
+        messages:   worldDeltaHistory,
+      });
+      for await (const event of worldDeltaStream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          worldDeltaContent += event.delta.text;
+          send({ world_delta_text: event.delta.text });
+        }
+      }
+    } catch (worldDeltaErr) {
+      console.error('World state delta generation error:', worldDeltaErr);
+    }
+
+    if (worldDeltaContent) {
+      dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+        [sessionId, 'world_delta', worldDeltaContent, new Date().toISOString()]);
+    }
+
+    send({ world_delta_done: true, content: worldDeltaContent });
+
+    // ── Phase 3: Session report ──────────────────────────────────────────────
     send({ report_start: true });
 
     const reportHistory = [...baseHistory, {

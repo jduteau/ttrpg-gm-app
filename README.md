@@ -1,6 +1,6 @@
 # GM Screen — TTRPG Campaign Manager
 
-A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns, streaming chat, a built-in dice roller, a rules arbiter, and session state management.
+A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns, streaming chat, a built-in dice roller, a rules arbiter, session state management, and world state tracking.
 
 The UI uses a parchment palette with shared theme tokens for campaign accents, arbiter highlights, destructive actions, overlays, shadows, and surface washes so the client stays visually consistent across screens and dialogs. Theme retuning should happen in `client/src/index.css` rather than by editing literal colors in individual component styles.
 
@@ -128,3 +128,34 @@ Tip: use single quotes for paths with spaces — `'~/Documents/My Sessions/sessi
 - All session data is stored locally in `server/data/sessions.db` (SQLite via sql.js)
 - No data leaves your machine except API calls to Anthropic
 - To back up your data, copy `server/data/sessions.db` and the `server/rulesets/` folder
+
+---
+
+## World State & Session State
+
+The app maintains two types of persistent state:
+
+### Session State
+- **Purpose**: Where the story is right now and what's happening next
+- **File**: `session-state.md` in each campaign folder
+- **Contains**: Character positions, health, active quests, immediate plot threads, pending decisions
+- **When**: Updated at the end of each session
+
+### World State
+- **Purpose**: What exists and what happened (accumulated facts and continuity)
+- **File**: `world-state.md` in each campaign folder
+- **Contains**: Established locations, NPCs, factions, party reputation, historical events, open plot hooks
+- **When**: Delta generated at the end of each session for review and integration
+
+### End Session Workflow
+When you end a session, the GM will:
+1. Generate a **session state snapshot** (immediate situation)
+2. Generate a **world state delta** (new facts established this session)
+3. Create a **session report** (narrative recap for archives)
+
+The world state delta captures everything mentioned during play—NPCs, locations, prices, rumors, party actions—for you to review and integrate into the ongoing world state file. This ensures nothing important gets forgotten between sessions.
+
+### Backup
+Both state files are automatically backed up before overwriting:
+- `state-backups/session-state-YYYY-MM-DD-HHmm.md`
+- `world-backups/world-state-YYYY-MM-DD-HHmm.md`

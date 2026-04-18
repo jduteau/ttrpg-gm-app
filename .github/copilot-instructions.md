@@ -203,8 +203,9 @@ Every API call assembles the system prompt in this order:
 2. `session-state-instructions.md` — Shared: how to read/write state
 3. `rulesets/{rulesetId}/session-state-fields.md` if present, otherwise `session-state-template.md` — State format
 4. `rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md` — Party, setting, house rules
-5. `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` if it has real content — Restored campaign state
-6. Each file in `context_files[]` — Selected modules and references (from both shared and campaign-specific folders)
+5. `rulesets/{rulesetId}/campaigns/{campaignId}/world-state.md` if it has real content — Accumulated campaign facts for consistency
+6. `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` if it has real content — Current campaign state
+7. Each file in `context_files[]` — Selected modules and references (from both shared and campaign-specific folders)
 
 ---
 
@@ -244,14 +245,23 @@ The `ChatWindow` renders dice rolls as compact `DiceRollBlock` components. `merg
 - `rulesets/{rulesetId}/campaigns/{campaignId}/state-backups/session-state-YYYY-MM-DD-HHmm.md` — Automatic datetime-stamped backup before overwrite (multiple saves per day are safe)
 - State is detected as "real" only if the file exists, is non-empty, and doesn't start with `<!--`
 
+## World State
+
+- `rulesets/{rulesetId}/campaigns/{campaignId}/world-state.md` — Accumulated facts, locations, NPCs, events from previous sessions
+- `rulesets/{rulesetId}/campaigns/{campaignId}/world-backups/world-state-YYYY-MM-DD-HHmm.md` — Automatic datetime-stamped backup before overwrite
+- Contains established facts organized by category: LOCATIONS, NPCS, FACTIONS, PARTY, LORE, OPEN THREADS
+- Used as foundation for consistency and continuity, injected before session state in system prompt
+
 End Session flow:
 1. User clicks End Session → confirmation dialog
 2. POST `/api/sessions/:id/end`
 3. Server appends a fixed instruction to history asking GM to produce state snapshot
 4. GM streams the state block (not saved as a normal message during streaming)
-5. On completion, state is saved to file + backup, and stored in DB as `role: 'state'`
-6. Session marked `ended_at = now`
-7. Conversation messages automatically trimmed to keep database lean
+5. Server appends instruction asking GM to produce world state delta
+6. GM streams the world state delta block capturing new facts established this session
+7. On completion, both state and world delta are saved to files + backups, and stored in DB as `role: 'state'` and `role: 'world_delta'`
+8. Session marked `ended_at = now`
+9. Conversation messages automatically trimmed to keep database lean
 
 ---
 

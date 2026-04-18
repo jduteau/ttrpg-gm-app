@@ -65,21 +65,15 @@ When writing the session state snapshot, use exactly this format and populate al
 ## Marching Order
 [list in order, front to back]
 
-## Active Leads & Rumours
-- [lead — party's current assessment and priority]
+## Active Leads & Immediate Priorities
+- [immediate next action or investigation the party is pursuing]
+- [urgent time-sensitive matter requiring attention]
 
-## Notable Loot
-- [item, where found, known properties, who carries it]
-
-## NPC Status
-- **[Name]** ([role, location]) — [current situation]. [trust level]. [voice note if significant]
+## Current NPC Relationships
+- **[Name]**: [current disposition toward party / immediate reaction if encountered]
 
 ## Open Threads
-1. [thread — what party knows, what they don't, urgency]
-
-## Inter-Location Status
-- Moathouse awareness of Caves situation: [unaware / suspicious / alarmed / preparing to abandon]
-- Hommlet agents aware of party investigation: [no / suspected / yes]
+1. [immediate plot thread affecting next session — what party knows, what they don't, urgency]
 
 ## Corrections & Ongoing Instructions
 [Any active corrections to Claude's portrayal that must persist session to session]
