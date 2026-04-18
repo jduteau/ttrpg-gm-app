@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../api.js';
 import './NewSessionDialog.css';
 
 export default function NewSessionDialog({ campaign, onConfirm, onCancel }) {
@@ -8,7 +9,7 @@ export default function NewSessionDialog({ campaign, onConfirm, onCancel }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/campaigns/${campaign.id}/files`)
+    fetch(apiUrl(`/api/campaigns/${campaign.id}/files`))
       .then(r => r.json())
       .then(data => {
         setFiles(data);

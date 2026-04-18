@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { apiUrl } from '../api.js';
 import './ChatWindow.css';
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -206,7 +207,7 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
     setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
 
     try {
-      const res = await fetch(`/api/sessions/${session.id}/chat`, {
+      const res = await fetch(apiUrl(`/api/sessions/${session.id}/chat`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
@@ -219,7 +220,7 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
   };
 
   useEffect(() => {
-    fetch(`/api/sessions/${session.id}/messages`)
+    fetch(apiUrl(`/api/sessions/${session.id}/messages`))
       .then(r => r.json())
       .then(raw => {
         const merged = mergeMessages(raw);
@@ -255,7 +256,7 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
     setEnding(true); setStateBuffer(''); setWorldDeltaBuffer(''); setWorldDeltaStarted(false);
 
     try {
-      const res = await fetch(`/api/sessions/${session.id}/end`, { method: 'POST' });
+      const res = await fetch(apiUrl(`/api/sessions/${session.id}/end`), { method: 'POST' });
       await consumeStream(res, { isEnd: true });
     } catch (err) {
       setMessages(m => [...m, { role: 'assistant', content: `[Error ending session: ${err.message}]`, id: Date.now() }]);
@@ -335,13 +336,13 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
           if (data.done) {
             if (isEnd) {
               // Reload to get saved state + world delta + report messages
-              const fresh = await fetch(`/api/sessions/${session.id}/messages`).then(r => r.json());
+              const fresh = await fetch(apiUrl(`/api/sessions/${session.id}/messages`)).then(r => r.json());
               setMessages(mergeMessages(fresh));
               setStateBuffer(''); setWorldDeltaBuffer(''); setWorldDeltaStarted(false); setReportBuffer('');
               setEnding(false);
               setSessionEnded(true);
             } else {
-              const fresh = await fetch(`/api/sessions/${session.id}/messages`).then(r => r.json());
+              const fresh = await fetch(apiUrl(`/api/sessions/${session.id}/messages`)).then(r => r.json());
               setMessages(mergeMessages(fresh));
               setStreamBuffer(''); setArbiterBlocks([]); setDiceRollBlocks([]); setPendingArbiter(null);
               setStreaming(false);

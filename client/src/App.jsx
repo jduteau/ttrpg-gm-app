@@ -3,6 +3,7 @@ import CampaignSelector from './components/CampaignSelector.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
 import NewSessionDialog from './components/NewSessionDialog.jsx';
+import { apiUrl } from './api.js';
 import './App.css';
 
 export default function App() {
@@ -15,7 +16,7 @@ export default function App() {
   const [hasActiveSession, setHasActiveSession] = useState(false);
 
   useEffect(() => {
-    fetch('/api/campaigns')
+    fetch(apiUrl('/api/campaigns'))
       .then(r => r.json())
       .then(setCampaigns)
       .catch(console.error);
@@ -34,7 +35,7 @@ export default function App() {
 
   const handleDialogConfirm = async ({ title, context_files }) => {
     setShowNewDialog(false);
-    const res = await fetch(`/api/campaigns/${activeCampaign.id}/sessions`, {
+    const res = await fetch(apiUrl(`/api/campaigns/${activeCampaign.id}/sessions`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, context_files }),

@@ -55,7 +55,10 @@ const listFlag   = hasFlag('list');
 const helpFlag   = hasFlag('help') || args.length === 0;
 
 // ── Discover valid campaigns by scanning rulesets directory ───────────────────
-const RULESETS_DIR = join(__dirname, 'server', 'rulesets');
+const CONTENT_DIR = process.env.CONTENT_DIR
+  ? resolve(process.env.CONTENT_DIR)
+  : join(__dirname, 'content');
+const RULESETS_DIR = join(CONTENT_DIR, 'rulesets');
 
 function discoverCampaigns() {
   const campaigns = [];
@@ -98,13 +101,13 @@ Bulk import a folder (all .md and .txt files as recaps, no state):
 List current sessions in the database:
   node import-sessions.js --list
 
-Available campaigns: ${VALID_CAMPAIGNS.length > 0 ? VALID_CAMPAIGNS.join(', ') : '(none found — check server/rulesets/ directory)'}
+Available campaigns: ${VALID_CAMPAIGNS.length > 0 ? VALID_CAMPAIGNS.join(', ') : '(none found — check content/rulesets/ directory)'}
 `);
   process.exit(0);
 }
 
 // ── Open database ────────────────────────────────────────────────────────────
-const DATA_DIR = join(__dirname, 'server', 'data');
+const DATA_DIR = join(CONTENT_DIR, 'data');
 const DB_PATH  = join(DATA_DIR, 'sessions.db');
 mkdirSync(DATA_DIR, { recursive: true });
 

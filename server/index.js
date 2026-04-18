@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
-import { join, dirname, basename, extname } from 'path';
+import { join, dirname, basename, extname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { randomInt } from 'crypto';
 import initSqlJs from 'sql.js';
@@ -12,17 +12,31 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ── Content directory ─────────────────────────────────────────────────────────
+// All campaign content, rulesets, and the database live here.
+// Override with CONTENT_DIR env var to decouple content from server code.
+const CONTENT_DIR = process.env.CONTENT_DIR
+  ? resolve(process.env.CONTENT_DIR)
+  : join(__dirname, '..', 'content');
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+// CORS_ORIGIN: comma-separated allowed origins (e.g. "https://myapp.com,https://www.myapp.com")
+// Defaults to localhost:5173 in dev, or open (*) in prod if not set.
 const isProd = process.env.NODE_ENV === 'production';
-app.use(cors(isProd ? {} : { origin: 'http://localhost:5173' }));
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+  : (isProd ? '*' : 'http://localhost:5173');
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 
-if (isProd) {
+if (isProd && !process.env.CORS_ORIGIN) {
+  // Only serve client static files when running as a single combined deploy
   const clientDist = join(__dirname, '..', 'client', 'dist');
   app.use(express.static(clientDist));
 }
 
 // ── Database ──────────────────────────────────────────────────────────────────
-const DATA_DIR = join(__dirname, 'data');
+const DATA_DIR = join(CONTENT_DIR, 'data');
 const DB_PATH  = join(DATA_DIR, 'sessions.db');
 mkdirSync(DATA_DIR, { recursive: true });
 
@@ -308,7 +322,7 @@ function getCampaign(id) {
 }
 
 // ── File helpers ──────────────────────────────────────────────────────────────
-const RULESETS_DIR = join(__dirname, 'rulesets');
+const RULESETS_DIR = join(CONTENT_DIR, 'rulesets');
 
 function labelFromFilename(filename) {
   return basename(filename, extname(filename))
@@ -381,7 +395,7 @@ function hasWorldState(campaignId) {
 }
 
 function loadSharedFile(filename) {
-  const p = join(__dirname, filename);
+  const p = join(CONTENT_DIR, filename);
   return existsSync(p) ? readFileSync(p, 'utf-8').trim() : null;
 }
 
