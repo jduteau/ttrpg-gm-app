@@ -7,7 +7,7 @@ import { apiUrl } from './api.js';
 import './App.css';
 
 export default function App() {
-  const [campaigns, setCampaigns] = useState([]);
+  const [rulesets, setRulesets] = useState({});
   const [activeCampaign, setActiveCampaign] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [showSelector, setShowSelector] = useState(true);
@@ -16,9 +16,9 @@ export default function App() {
   const [hasActiveSession, setHasActiveSession] = useState(false);
 
   useEffect(() => {
-    fetch(apiUrl('/api/campaigns'))
+    fetch(apiUrl('/api/rulesets'))
       .then(r => r.json())
-      .then(setCampaigns)
+      .then(setRulesets)
       .catch(console.error);
   }, []);
 
@@ -60,7 +60,7 @@ export default function App() {
   if (showSelector || !activeCampaign) {
     return (
       <CampaignSelector
-        campaigns={campaigns}
+        rulesets={rulesets}
         onSelect={handleSelectCampaign}
         activeCampaign={activeCampaign}
       />

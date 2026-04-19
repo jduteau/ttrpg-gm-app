@@ -63,11 +63,11 @@ ttrpg-gm-app/
 │   ├── vite.config.js                      # Proxies /api → localhost:3001
 │   └── src/
 │       ├── main.jsx
-│       ├── App.jsx                         # Root: campaign selector, session routing, dialog state
+│       ├── App.jsx                         # Root: two-stage campaign selector, session routing, dialog state
 │       ├── App.css
 │       ├── index.css                       # CSS variables and global styles
 │       └── components/
-│           ├── CampaignSelector.jsx        # Full-screen campaign picker
+│           ├── CampaignSelector.jsx        # Two-stage selector: ruleset → campaign
 │           ├── CampaignSelector.css
 │           ├── Sidebar.jsx                 # Session list, active context files, state badge
 │           ├── Sidebar.css
@@ -316,6 +316,7 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `content/r
 
 - **CSS variables** defined in `client/src/index.css` — always use these, never hardcode colours
 - **Campaign colour** passed as `--campaign-color` prop via inline style on container elements
+- **Two-stage selection** — `CampaignSelector` first shows rulesets, then campaigns for the selected ruleset, with breadcrumb navigation and back button
 - **No component library** — all styling is hand-written CSS in co-located `.css` files
 - **Font stack**: `--font-display` (Cinzel) for headings/labels, `--font-body` (Crimson Pro) for prose
 - **Parchment theme** — backgrounds use `--bg-void` / `--bg-deep` / `--bg-surface` / `--bg-raised` for warm paper surfaces rather than dark panels
@@ -341,8 +342,8 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `content/r
 
 ### Component responsibilities
 
-- **App.jsx** — campaign selection state, active session state, dialog visibility, API calls for session creation
-- **CampaignSelector.jsx** — full-screen picker, no state, pure display + callback
+- **App.jsx** — campaign selection state, active session state, dialog visibility, API calls for session creation, fetches ruleset data from `/api/rulesets`
+- **CampaignSelector.jsx** — full-screen two-stage picker: first select ruleset, then campaign, with breadcrumb navigation and back button. Uses internal state to track selected ruleset. Creates composite campaign IDs (`ruleset.campaign`) for compatibility.
 - **Sidebar.jsx** — fetches its own session list, re-fetches when `activeSession` changes, shows context files for active session
 - **ChatWindow.jsx** — owns all streaming state: `streamBuffer`, `pendingArbiter`, `arbiterBlocks`, `stateBuffer`, `ending`, `sessionEnded`
 - **NewSessionDialog.jsx** — fetches available files on mount, manages checkbox selection, calls back with `{title, context_files}`
@@ -388,6 +389,7 @@ node import-sessions.js --list
 - **Composite campaign IDs**: Campaign IDs use the format `rulesetId.campaignId` (e.g., `ose.lolth-conspiracy`). The `parseCampaignId()` helper splits these for file path construction.
 - **File cascade loading**: The system first checks campaign-specific folders, then falls back to ruleset-level shared folders for modules and references.
 - **Legacy API compatibility**: `/api/campaigns` endpoint maintains backward compatibility by converting the new structure to the old flat format for the frontend.
+- **Two-stage selector**: `CampaignSelector` uses internal state to track ruleset selection, creates composite `ruleset.campaign` IDs for compatibility, and maintains breadcrumb navigation with a back button.
 - **Campaign color theming**: pass `style={{ '--campaign-color': ruleset.color }}` on a container, then use `var(--campaign-color)` in CSS. Colors come from the ruleset, not individual campaigns.
 - **Accent palette**: prefer muted, ink-friendly campaign accents that still contrast on parchment backgrounds; avoid neon or overly saturated hues in `RULESET_DEFAULTS` and CSS vars.
 - **Theme tokens first**: when adjusting the parchment UI, prefer adding or reusing semantic CSS variables in `client/src/index.css` rather than scattering literal `rgba(...)`, shadows, or parchment tint values across component styles.
