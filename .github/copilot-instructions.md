@@ -67,6 +67,8 @@ ttrpg-gm-app/
 │       ├── App.css
 │       ├── index.css                       # CSS variables and global styles
 │       └── components/
+│           ├── AuthScreen.jsx              # Password entry screen for basic protection
+│           ├── AuthScreen.css
 │           ├── CampaignSelector.jsx        # Two-stage selector: ruleset → campaign
 │           ├── CampaignSelector.css
 │           ├── Sidebar.jsx                 # Session list, active context files, state badge
@@ -77,7 +79,7 @@ ttrpg-gm-app/
 │           └── NewSessionDialog.css
 ├── import-sessions.js                      # CLI tool: import blog post archives into DB
 ├── package.json                            # Root: concurrently dev scripts
-├── .env.example                            # ANTHROPIC_API_KEY, PORT, CONTENT_DIR, CORS_ORIGIN
+├── .env.example                            # ANTHROPIC_API_KEY, PORT, APP_PASSWORD, CONTENT_DIR, CORS_ORIGIN
 └── .github/
     └── copilot-instructions.md             # This file
 ```
@@ -123,6 +125,10 @@ Copy `.env.example` to `.env` in the project root and fill in:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 PORT=3001
+
+# Simple password protection for the frontend
+# Leave empty to disable authentication
+APP_PASSWORD=your_secure_password_here
 
 # Optional: path to content directory (rulesets, prompts, database)
 # Defaults to ./content relative to the project root
@@ -187,16 +193,19 @@ All routes are in `server/index.js`.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/rulesets` | List all rulesets with their campaigns |
-| GET | `/api/campaigns` | List all campaigns (legacy compatibility) |
-| GET | `/api/campaigns/:campaignId/files` | List modules, references, hasArbiter, hasState |
-| GET | `/api/campaigns/:campaignId/sessions` | List sessions (newest first) |
-| POST | `/api/campaigns/:campaignId/sessions` | Create session `{title?, context_files[]}` |
-| GET | `/api/sessions/:id/messages` | All messages for a session |
-| DELETE | `/api/sessions/:id` | Delete session and messages |
-| POST | `/api/sessions/cleanup` | Trim messages from all ended sessions |
-| POST | `/api/sessions/:id/chat` | Send message → SSE stream |
-| POST | `/api/sessions/:id/end` | End session → SSE stream (generates + saves state) |
+| POST | `/api/auth/verify` | Password authentication → returns Bearer token |
+| GET | `/api/rulesets` | List all rulesets with their campaigns (protected) |
+| GET | `/api/campaigns` | List all campaigns (legacy compatibility, protected) |
+| GET | `/api/campaigns/:campaignId/files` | List modules, references, hasArbiter, hasState (protected) |
+| GET | `/api/campaigns/:campaignId/sessions` | List sessions (newest first, protected) |
+| POST | `/api/campaigns/:campaignId/sessions` | Create session `{title?, context_files[]}` (protected) |
+| GET | `/api/sessions/:id/messages` | All messages for a session (protected) |
+| DELETE | `/api/sessions/:id` | Delete session and messages (protected) |
+| POST | `/api/sessions/cleanup` | Trim messages from all ended sessions (protected) |
+| POST | `/api/sessions/:id/chat` | Send message → SSE stream (protected) |
+| POST | `/api/sessions/:id/end` | End session → SSE stream (generates + saves state, protected) |
+
+**Authentication**: All routes except `/api/auth/verify` require a valid Bearer token in the `Authorization` header. Tokens expire after 24 hours and are managed in-memory on the server.
 
 ### SSE event types (chat and end endpoints)
 
@@ -309,6 +318,37 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `content/r
 2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, shared `modules/`, `references/`
 3. Create first campaign under `campaigns/` subdirectory
 4. Add an entry to `RULESET_DEFAULTS` in `server/index.js` for custom icon/color (optional)
+
+---
+
+## Authentication
+
+Simple password-based protection for self-hosted use. Not enterprise-grade but sufficient to keep casual visitors out.
+
+### Frontend Authentication
+- **AuthScreen component** — Password entry with parchment theme styling
+- **Token storage** — 24-hour Bearer tokens in `localStorage`
+- **Authentication state** — App.jsx manages auth state and checks tokens on load
+- **API integration** — `getAuthHeaders()` helper adds tokens to all requests
+
+### Backend Authentication  
+- **Password verification** — Compares against `APP_PASSWORD` environment variable
+- **Token management** — In-memory Set with automatic cleanup after 24 hours
+- **Route protection** — `requireAuth` middleware on all `/api/*` routes except `/api/auth/verify`
+- **Graceful fallback** — If `APP_PASSWORD` not set, auth is disabled with console warning
+
+### Authentication Flow
+1. App checks `localStorage` for existing token on load
+2. If token exists, validates with test API request to `/api/rulesets`
+3. Invalid/missing token → `AuthScreen` component  
+4. Valid password → server generates token, client stores in `localStorage`
+5. All subsequent API calls include `Authorization: Bearer <token>` header
+6. Tokens auto-expire after 24 hours, requiring re-authentication
+
+### Key Files
+- `client/src/components/AuthScreen.jsx` — Password entry UI
+- `client/src/api.js` — `getAuthHeaders()` helper for token inclusion
+- `server/index.js` — Auth middleware, token management, `/api/auth/verify` route
 
 ---
 

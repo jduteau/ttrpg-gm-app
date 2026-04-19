@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AuthScreen from './components/AuthScreen.jsx';
 import CampaignSelector from './components/CampaignSelector.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
@@ -7,6 +8,8 @@ import { apiUrl } from './api.js';
 import './App.css';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [rulesets, setRulesets] = useState({});
   const [activeCampaign, setActiveCampaign] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
@@ -15,12 +18,47 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
 
+  // Check if user is already authenticated on app load
   useEffect(() => {
-    fetch(apiUrl('/api/rulesets'))
-      .then(r => r.json())
+    const token = localStorage.getItem('auth-token');
+    if (token) {
+      // Verify token is still valid by making a test request
+      fetch(apiUrl('/api/rulesets'), {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(response => {
+        if (response.ok) {
+          setIsAuthenticated(true);
+          return response.json();
+        } else {
+          // Token is invalid, remove it
+          localStorage.removeItem('auth-token');
+          throw new Error('Invalid token');
+        }
+      })
       .then(setRulesets)
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setAuthChecked(true));
+    } else {
+      setAuthChecked(true);
+    }
   }, []);
+
+  // Load rulesets after authentication
+  useEffect(() => {
+    if (isAuthenticated && Object.keys(rulesets).length === 0) {
+      fetch(apiUrl('/api/rulesets'), {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token')}` }
+      })
+        .then(r => r.json())
+        .then(setRulesets)
+        .catch(console.error);
+    }
+  }, [isAuthenticated, rulesets]);
+
+  const handleAuthenticated = () => {
+    setIsAuthenticated(true);
+  };
 
   const handleSelectCampaign = (campaign) => {
     setActiveCampaign(campaign);
@@ -37,7 +75,10 @@ export default function App() {
     setShowNewDialog(false);
     const res = await fetch(apiUrl(`/api/campaigns/${activeCampaign.id}/sessions`), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth-token')}`
+      },
       body: JSON.stringify({ title, context_files }),
     });
     const session = await res.json();
@@ -56,6 +97,26 @@ export default function App() {
     setActiveSession(session);
     setSidebarOpen(false);
   };
+
+  // Show loading while checking authentication
+  if (!authChecked) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-container">
+          <div className="auth-header">
+            <span className="auth-icon">🎲</span>
+            <h1>TTRPG Game Master</h1>
+            <p>Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth screen if not authenticated
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthenticated={handleAuthenticated} />;
+  }
 
   if (showSelector || !activeCampaign) {
     return (

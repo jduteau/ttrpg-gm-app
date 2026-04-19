@@ -3,7 +3,7 @@ import cors from 'cors';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import { join, dirname, basename, extname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { randomInt } from 'crypto';
+import { randomInt, createHash, randomBytes } from 'crypto';
 import initSqlJs from 'sql.js';
 import Anthropic from '@anthropic-ai/sdk';
 import 'dotenv/config';
@@ -686,10 +686,70 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
   return '';
 }
 
+// ── Authentication ────────────────────────────────────────────────────────────
+
+// Simple auth tokens (in memory for basic protection)
+const authTokens = new Set();
+
+// Generate a random session token
+function generateAuthToken() {
+  return randomBytes(32).toString('hex');
+}
+
+// Verify password against environment variable
+function verifyPassword(password) {
+  const configuredPassword = process.env.APP_PASSWORD;
+  if (!configuredPassword) {
+    console.warn('⚠️  APP_PASSWORD not set - authentication disabled');
+    return true; // Allow access if no password is configured
+  }
+  return password === configuredPassword;
+}
+
+// Auth middleware for protected routes
+function requireAuth(req, res, next) {
+  // Skip auth if no password is configured
+  if (!process.env.APP_PASSWORD) {
+    return next();
+  }
+
+  const token = req.headers.authorization?.replace('Bearer ', '') || 
+                req.query.token;
+  
+  if (!token || !authTokens.has(token)) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  next();
+}
+
+// Authentication routes
+app.post('/api/auth/verify', (req, res) => {
+  const { password } = req.body;
+  
+  if (!password) {
+    return res.status(400).json({ error: 'Password required' });
+  }
+  
+  if (!verifyPassword(password)) {
+    return res.status(401).json({ error: 'Invalid password' });
+  }
+  
+  const token = generateAuthToken();
+  authTokens.add(token);
+  
+  // Clean up old tokens after 24 hours
+  setTimeout(() => {
+    authTokens.delete(token);
+  }, 24 * 60 * 60 * 1000);
+  
+  res.json({ token });
+});
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 // Return all rulesets and their campaigns
-app.get('/api/rulesets', (req, res) => {
+app.get('/api/rulesets', requireAuth, (req, res) => {
   const rulesets = getRulesets();
   const campaigns = getCampaigns();
   
@@ -723,7 +783,7 @@ app.get('/api/campaigns', (req, res) => {
   res.json(legacyFormat);
 });
 
-app.get('/api/campaigns/:campaignId/files', (req, res) => {
+app.get('/api/campaigns/:campaignId/files', requireAuth, (req, res) => {
   const { campaignId } = req.params;
   if (!getCampaign(campaignId)) return res.status(404).json({ error: 'Campaign not found' });
   const { rulesetId } = parseCampaignId(campaignId);
@@ -735,7 +795,7 @@ app.get('/api/campaigns/:campaignId/files', (req, res) => {
   });
 });
 
-app.get('/api/campaigns/:campaignId/sessions', (req, res) => {
+app.get('/api/campaigns/:campaignId/sessions', requireAuth, (req, res) => {
   const sessions = dbAll(
     'SELECT * FROM sessions WHERE campaign_id = ? ORDER BY updated_at DESC',
     [req.params.campaignId]
@@ -743,7 +803,7 @@ app.get('/api/campaigns/:campaignId/sessions', (req, res) => {
   res.json(sessions.map(s => ({ ...s, context_files: JSON.parse(s.context_files || '[]') })));
 });
 
-app.post('/api/campaigns/:campaignId/sessions', (req, res) => {
+app.post('/api/campaigns/:campaignId/sessions', requireAuth, (req, res) => {
   const { campaignId } = req.params;
   if (!getCampaign(campaignId)) return res.status(404).json({ error: 'Campaign not found' });
   const now   = new Date().toISOString();
@@ -757,7 +817,7 @@ app.post('/api/campaigns/:campaignId/sessions', (req, res) => {
   res.json({ id, campaign_id: campaignId, title, context_files: req.body.context_files || [], created_at: now, updated_at: now });
 });
 
-app.get('/api/sessions/:sessionId/messages', (req, res) => {
+app.get('/api/sessions/:sessionId/messages', requireAuth, (req, res) => {
   const messages = dbAll(
     'SELECT * FROM messages WHERE session_id = ? ORDER BY created_at ASC',
     [req.params.sessionId]
@@ -765,7 +825,7 @@ app.get('/api/sessions/:sessionId/messages', (req, res) => {
   res.json(messages);
 });
 
-app.delete('/api/sessions/:sessionId', (req, res) => {
+app.delete('/api/sessions/:sessionId', requireAuth, (req, res) => {
   const { sessionId } = req.params;
 
   const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);
@@ -812,7 +872,7 @@ app.delete('/api/sessions/:sessionId', (req, res) => {
 });
 
 // Cleanup endpoint: trim messages from all ended sessions
-app.post('/api/sessions/cleanup', (req, res) => {
+app.post('/api/sessions/cleanup', requireAuth, (req, res) => {
   try {
     trimEndedSessionMessages();
     res.json({ success: true, message: 'Ended session messages trimmed successfully' });
@@ -823,7 +883,7 @@ app.post('/api/sessions/cleanup', (req, res) => {
 });
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-app.post('/api/sessions/:sessionId/chat', async (req, res) => {
+app.post('/api/sessions/:sessionId/chat', requireAuth, async (req, res) => {
   const { sessionId } = req.params;
   const { message }   = req.body;
 
@@ -860,7 +920,7 @@ app.post('/api/sessions/:sessionId/chat', async (req, res) => {
 });
 
 // ── End session ───────────────────────────────────────────────────────────────
-app.post('/api/sessions/:sessionId/end', async (req, res) => {
+app.post('/api/sessions/:sessionId/end', requireAuth, async (req, res) => {
   const { sessionId } = req.params;
 
   const session = dbGet('SELECT * FROM sessions WHERE id = ?', [sessionId]);

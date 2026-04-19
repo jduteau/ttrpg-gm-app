@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiUrl } from '../api.js';
+import { apiUrl, getAuthHeaders } from '../api.js';
 import './Sidebar.css';
 
 function formatDate(iso) {
@@ -34,7 +34,9 @@ export default function Sidebar({
   const [deletingId, setDeletingId] = useState(null);
 
   const fetchSessions = useCallback(() => {
-    fetch(apiUrl(`/api/campaigns/${campaign.id}/sessions`))
+    fetch(apiUrl(`/api/campaigns/${campaign.id}/sessions`), {
+      headers: getAuthHeaders()
+    })
       .then(r => r.json())
       .then(data => {
         setSessions(data);
@@ -52,7 +54,10 @@ export default function Sidebar({
       : 'Delete this session?';
     if (!confirm(msg)) return;
     setDeletingId(session.id);
-    await fetch(apiUrl(`/api/sessions/${session.id}`), { method: 'DELETE' });
+    await fetch(apiUrl(`/api/sessions/${session.id}`), { 
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
     setDeletingId(null);
     fetchSessions();
     if (activeSession?.id === session.id) onSelectSession(null);

@@ -3,3 +3,9 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 export const apiUrl = (path) => `${API_BASE}${path}`;
+
+// Helper to get auth headers
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('auth-token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
