@@ -1,6 +1,6 @@
 # TTRPG GM App — Copilot Instructions
 
-A self-hosted AI Game Master application for solo tabletop RPG campaigns. Node.js/Express backend, React/Vite frontend, SQLite via sql.js, Anthropic API for streaming chat and tool use.
+A self-hosted AI Game Master application for solo tabletop RPG campaigns. Node.js/Express backend, React/Vite frontend, SQLite via sql.js, Anthropic API for streaming chat and tool use, MCP server integration for world information.
 
 ---
 
@@ -8,56 +8,25 @@ A self-hosted AI Game Master application for solo tabletop RPG campaigns. Node.j
 
 ```
 ttrpg-gm-app/
-├── content/                                # All campaign content and the database
-│   ├── arbiter-prompt.md                   # Shared rules arbiter persona
-│   ├── session-state-instructions.md       # Shared GM instructions for reading/writing state
+├── content/                                # Campaign content and database
+│   ├── arbiter-prompt.md                   # Generic rules arbiter persona
+│   ├── session-state-instructions.md       # Generic GM instructions for reading/writing state
 │   ├── session-state-template.md           # Universal session state template (fallback)
-│   ├── world-state-template.md             # World state format reference
+│   ├── world-arbiter-usage.md              # Generic world query usage instructions
 │   ├── data/
 │   │   └── sessions.db                     # SQLite database (sql.js)
 │   └── rulesets/
-│       ├── ose/
-│       │   ├── system-prompt.md            # Core OSE rules and mechanics
-│       │   ├── rules-arbiter.md            # OSE rules reference for arbiter
-│       │   ├── session-state-fields.md     # OSE-specific state template
-│       │   ├── modules/                    # Shared OSE modules (.md)
-│       │   ├── references/                 # Shared OSE references (.md)
-│       │   └── campaigns/
-│       │       └── lolth-conspiracy/
-│       │           ├── campaign-prompt.md  # Party, setting, house rules
-│       │           ├── session-state.md    # Current campaign state
-│       │           ├── world-state.md      # Accumulated facts and continuity
-│       │           ├── state-backups/      # Dated state snapshots
-│       │           ├── world-backups/      # Dated world state snapshots
-│       │           ├── modules/            # Campaign-specific modules
-│       │           └── references/         # Campaign-specific references
-│       ├── masks/
-│       │   ├── system-prompt.md            # Core Masks rules
-│       │   ├── rules-arbiter.md            # Masks rules reference
-│       │   ├── session-state-fields.md     # Masks-specific state template
-│       │   └── campaigns/
-│       │       └── last-resort/
-│       │           ├── campaign-prompt.md  # Team details, setting
-│       │           ├── session-state.md    # Current campaign state
-│       │           └── world-state.md      # Accumulated facts and continuity
-│       ├── dragonbane/
-│       │   ├── system-prompt.md            # Core Dragonbane rules
-│       │   ├── session-state-fields.md     # Dragonbane-specific state template
-│       │   └── campaigns/
-│       │       └── dragon-emperor/
-│       │           ├── campaign-prompt.md
-│       │           ├── session-state.md
-│       │           └── world-state.md
-│       └── ironsworn-badlands/
-│           ├── system-prompt.md            # Core Ironsworn: Badlands rules
-│           ├── session-state-fields.md     # Ironsworn-specific state template
+│       └── ose/
+│           ├── system-prompt.md            # Core OSE rules and mechanics
+│           ├── session-state-fields.md     # OSE-specific state template
 │           └── campaigns/
-│               └── jake-powell/
-│                   ├── campaign-prompt.md
-│                   ├── session-state.md
-│                   └── world-state.md
+│               └── lolth-conspiracy/
+│                   ├── campaign-prompt.md  # Party, setting, house rules
+│                   ├── session-state.md    # Current campaign state (updated at session end)
+│                   └── state-backups/      # Dated session state snapshots
 ├── server/
-│   └── index.js                            # Express server — all API routes and Anthropic calls
+│   ├── index.js                            # Express server — all API routes and Anthropic calls
+│   └── world-mcp-client.js                 # MCP client for world information
 ├── client/
 │   ├── index.html
 │   ├── vite.config.js                      # Proxies /api → localhost:3001
@@ -79,7 +48,8 @@ ttrpg-gm-app/
 │           └── NewSessionDialog.css
 ├── import-sessions.js                      # CLI tool: import blog post archives into DB
 ├── package.json                            # Root: concurrently dev scripts
-├── .env.example                            # ANTHROPIC_API_KEY, PORT, APP_PASSWORD, CONTENT_DIR, CORS_ORIGIN
+├── .env.example                            # ANTHROPIC_API_KEY, PORT, APP_PASSWORD, CONTENT_DIR, CORS_ORIGIN, WORLD_MCP_SERVER_URL
+├── MCP-INTEGRATION-SUMMARY.md              # Documentation for MCP server integration
 └── .github/
     └── copilot-instructions.md             # This file
 ```
@@ -90,7 +60,8 @@ ttrpg-gm-app/
 
 - **Backend**: Node.js 18+, Express, ES modules (`"type": "module"`)
 - **Database**: sql.js (pure-JS SQLite, no native compilation) — `content/data/sessions.db`
-- **AI**: `@anthropic-ai/sdk` — streaming via `anthropic.messages.stream()`, tool use for rules arbiter
+- **AI**: `@anthropic-ai/sdk` — streaming via `anthropic.messages.stream()`, tool use for rules arbiter and world queries
+- **World Data**: MCP (Model Context Protocol) server integration for campaign world information
 - **Frontend**: React 18, Vite 5, plain CSS (no Tailwind, no component library)
 - **Dev**: `concurrently` to run server and client together via `npm run dev` from root
 
@@ -136,6 +107,10 @@ APP_PASSWORD=your_secure_password_here
 
 # Optional: allowed CORS origins for split client/server deploys
 # CORS_ORIGIN=https://your-client.example.com
+
+# MCP World Server Configuration
+# URL to the world MCP server that provides campaign world information
+# WORLD_MCP_SERVER_URL=ws://localhost:3333/ws
 ```
 
 The server loads this via `dotenv/config`.
@@ -171,17 +146,16 @@ messages (
 |------|---------|-------|
 | `user` | plain text | Player input |
 | `assistant` | plain text | GM response |
-| `tool_use` | JSON `{tool_use_id, question}` | Rules arbiter query (for UI rendering) |
-| `tool_result` | JSON `{tool_use_id, result}` | Rules arbiter ruling (for UI rendering) |
+| `tool_use` | JSON `{tool_use_id, question}` or `{tool_use_id, tool_name, ...}` | Rules arbiter or world query (for UI rendering) |
+| `tool_result` | JSON `{tool_use_id, result}` | Tool response (for UI rendering) |
 | `archive` | plain text | Imported session blog post |
-| `state` | plain text | End-of-session state snapshot |
-| `world_delta` | plain text | End-of-session world state delta (new facts) |
+| `state` | plain text | End-of-session state snapshot (includes world updates) |
 
 ### Message Trimming
 
 Ended sessions automatically trim conversation messages to keep the database lean:
 - **Kept**: `archive` and `state` messages (provide continuity)
-- **Removed**: `user`, `assistant`, `tool_use`, `tool_result`, `world_delta` messages (conversational flow; world delta content is already persisted to `world-state.md`)
+- **Removed**: `user`, `assistant`, `tool_use`, `tool_result` messages (conversational flow)
 
 When a session ends, only archive content and final state are preserved. The next session starts fresh with the state file injected into the system prompt, maintaining full continuity.
 
@@ -195,7 +169,6 @@ All routes are in `server/index.js`.
 |--------|------|-------------|
 | POST | `/api/auth/verify` | Password authentication → returns Bearer token |
 | GET | `/api/rulesets` | List all rulesets with their campaigns (protected) |
-| GET | `/api/campaigns` | List all campaigns (legacy compatibility, protected) |
 | GET | `/api/campaigns/:campaignId/files` | List modules, references, hasArbiter, hasState (protected) |
 | GET | `/api/campaigns/:campaignId/sessions` | List sessions (newest first, protected) |
 | POST | `/api/campaigns/:campaignId/sessions` | Create session `{title?, context_files[]}` (protected) |
@@ -216,9 +189,7 @@ All routes are in `server/index.js`.
 { dice_roll: true, label, expressions, results } // dice rolled server-side
 { state_start: true }                        // end-session state generation starting
 { state_done: true, content: "..." }         // state saved to file
-{ world_delta_start: true }                  // end-session world state delta starting
-{ world_delta_text: "..." }                  // streaming world delta chunk
-{ world_delta_done: true, content: "..." }   // world delta saved to file
+{ report_text: "..." }                        // streaming session report chunk
 { done: true }                               // stream complete
 { error: "..." }                             // error occurred
 ```
@@ -231,20 +202,21 @@ Every API call assembles the system prompt in this order:
 
 1. `rulesets/{rulesetId}/system-prompt.md` — Core rules and mechanics
 2. `session-state-instructions.md` — Shared: how to read/write state
-3. `rulesets/{rulesetId}/session-state-fields.md` if present, otherwise `session-state-template.md` — State format
-4. `rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md` — Party, setting, house rules
-5. `rulesets/{rulesetId}/campaigns/{campaignId}/world-state.md` if it has real content — Accumulated campaign facts for consistency
-6. `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` if it has real content — Current campaign state
-7. Each file in `context_files[]` — Selected modules and references (from both shared and campaign-specific folders)
+3. `world-arbiter-usage.md` — Shared: how to use query_world tool
+4. `rulesets/{rulesetId}/session-state-fields.md` if present, otherwise `session-state-template.md` — State format
+5. `rulesets/{rulesetId}/campaigns/{campaignId}/campaign-prompt.md` — Party, setting, house rules
+6. World context from MCP server (replaces world-state.md files) — Accumulated campaign facts for consistency
+7. `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` if it has real content — Current campaign state
+8. Each file in `context_files[]` — Selected modules and references (no longer supported, kept for compatibility)
 
 ---
 
 ## Rules Arbiter
 
-When `rulesets/{rulesetId}/rules-arbiter.md` exists, the GM gets a `query_rules` tool. The tool call:
+When a ruleset has a `rules-arbiter.md` file, the GM gets a `query_rules` tool. The tool call:
 
 1. Interrupts the GM stream
-2. Makes a separate non-streaming Anthropic call with `arbiter-prompt.md` + `rules-arbiter.md`
+2. Makes a separate non-streaming Anthropic call with `arbiter-prompt.md` + `rules-arbiter.md` system prompt
 3. Returns the ruling as a tool result
 4. GM stream continues incorporating the ruling
 
@@ -252,7 +224,44 @@ Tool use and tool results are saved as separate DB rows (`tool_use` / `tool_resu
 
 ---
 
+## World Query System
+
+The GM has access to a `query_world` tool that consults the campaign's world knowledge through an MCP (Model Context Protocol) server. This replaces the previous world-state.md file system.
+
+### How it Works
+
+1. **Session Start**: App queries MCP server for world context → injects into system prompt
+2. **During Session**: GM can use `query_world` tool as needed for continuity
+3. **Session End**: World delta generated → sent to MCP server for persistence
+
+### Tool Usage
+
+The GM uses `query_world` whenever they need information about:
+- **Locations**: Geography, settlements, dungeons, points of interest
+- **NPCs**: Characters, relationships, current dispositions
+- **Factions**: Organizations, political entities, standings with party
+- **Party Reputation**: How different groups view the party
+- **Lore**: Historical events, legends, cultural knowledge
+- **Open Threads**: Ongoing quests, unresolved mysteries, future plot hooks
+
+Queries are specific and contextual, e.g., "What does the party know about the Temple of Elemental Evil?" or "NPCs in Hommlet who might help with information".
+
+---
+
 ## Dice Roller
+
+The GM always has a `roll_dice` tool available (alongside `query_rules` when an arbiter exists and `query_world` for world information). The tool:
+
+1. Is called by the GM with `{ expressions: ["d20", "2d6"], label: "Attack roll" }`
+2. Rolls dice server-side using `crypto.randomInt` (cryptographically random)
+3. Emits `{ dice_roll: true, label, expressions, results }` SSE event to the client
+4. Returns the formatted result string to the GM as a tool result so it can narrate the outcome
+
+Supported expressions: `d20`, `2d6`, `3d6+2`, `4d6k3` (keep highest 3), `d100`, `d8-1`
+
+DB storage: `tool_use` row has `{ tool_use_id, tool_name: 'roll_dice', expressions, label }`; `tool_result` row has `{ tool_use_id, result }`.
+
+The `ChatWindow` renders dice rolls as compact `DiceRollBlock` components. `mergeMessages()` detects dice roll pairs by the presence of `d.expressions` (vs `d.question` for arbiter pairs).
 
 The GM always has a `roll_dice` tool available (alongside `query_rules` when an arbiter exists). The tool:
 
@@ -272,26 +281,23 @@ The `ChatWindow` renders dice rolls as compact `DiceRollBlock` components. `merg
 ## Session State
 
 - `rulesets/{rulesetId}/campaigns/{campaignId}/session-state.md` — Current state, read at every session start, overwritten on End Session
-- `rulesets/{rulesetId}/campaigns/{campaignId}/state-backups/session-state-YYYY-MM-DD-HHmm.md` — Automatic datetime-stamped backup before overwrite (multiple saves per day are safe)
 - State is detected as "real" only if the file exists, is non-empty, and doesn't start with `<!--`
 
 ## World State
 
-- `rulesets/{rulesetId}/campaigns/{campaignId}/world-state.md` — Accumulated facts, locations, NPCs, events from previous sessions
-- `rulesets/{rulesetId}/campaigns/{campaignId}/world-backups/world-state-YYYY-MM-DD-HHmm.md` — Automatic datetime-stamped backup before overwrite
+- World information is now served by an MCP (Model Context Protocol) server instead of local files
 - Contains established facts organized by category: LOCATIONS, NPCS, FACTIONS, PARTY, LORE, OPEN THREADS
-- Used as foundation for consistency and continuity, injected before session state in system prompt
+- Used as foundation for consistency and continuity, injected into system prompt via MCP query
+- World deltas are sent to MCP server instead of being written to files
 
 End Session flow:
 1. User clicks End Session → confirmation dialog
 2. POST `/api/sessions/:id/end`
-3. Server appends a fixed instruction to history asking GM to produce state snapshot
+3. Server appends a fixed instruction to history asking GM to produce combined state snapshot (includes session state and world updates)
 4. GM streams the state block (not saved as a normal message during streaming)
-5. Server appends instruction asking GM to produce world state delta
-6. GM streams the world state delta block capturing new facts established this session
-7. On completion, both state and world delta are saved to files + backups, and stored in DB as `role: 'state'` and `role: 'world_delta'`
-8. Session marked `ended_at = now`
-9. Conversation messages automatically trimmed to keep database lean
+5. On completion, state is saved to file, stored in DB as `role: 'state'`
+6. Session marked `ended_at = now`
+7. Conversation messages automatically trimmed to keep database lean
 
 ---
 
@@ -309,13 +315,13 @@ Rulesets and campaigns are **dynamically discovered** by scanning the `content/r
 ### Adding a new campaign to an existing ruleset
 
 1. Create `content/rulesets/{rulesetId}/campaigns/{campaignId}/` with `campaign-prompt.md`
-2. Optionally add campaign-specific `modules/`, `references/`, `session-state.md`, and `world-state.md`
+2. Optionally add campaign-specific `session-state.md`
 3. Restart the server — it will be auto-discovered
 
 ### Adding a new ruleset
 
 1. Create `content/rulesets/{rulesetId}/` with `system-prompt.md` (first line should be a `#` header — used as the display name)
-2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, shared `modules/`, `references/`
+2. Optionally add `rules-arbiter.md` to enable the rules arbiter tool, `session-state-fields.md` for custom state format
 3. Create first campaign under `campaigns/` subdirectory
 4. Add an entry to `RULESET_DEFAULTS` in `server/index.js` for custom icon/color (optional)
 
@@ -398,9 +404,6 @@ Simple password-based protection for self-hosted use. Not enterprise-grade but s
 # Recap only
 node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --title "Session 1"
 
-# Recap + state (marks session ended, writes session-state.md + backup)
-node import-sessions.js --campaign ose.lolth-conspiracy --file "session1.md" --state "session1-state.md"
-
 # State only
 node import-sessions.js --campaign ose.lolth-conspiracy --state "session1-state.md" --title "Session 1"
 
@@ -411,7 +414,7 @@ node import-sessions.js --list
 ```
 
 - Recaps are stored as `role: 'archive'` messages — rendered as gold-bordered blocks in the UI, excluded from Anthropic message history
-- State is stored as `role: 'state'` message, written to `session-state.md` in the campaign folder, and backed up to `state-backups/` if a state already exists
+- State is stored as `role: 'state'` message, written to `session-state.md` in the campaign folder
 - Sessions imported with `--state` are marked `ended_at` in the database
 - Available campaigns are dynamically discovered from `content/rulesets/` (no hardcoded list)
 - File paths support `~` expansion and shell backslash escapes; use single quotes in the shell to avoid quoting issues with spaces
@@ -425,10 +428,9 @@ node import-sessions.js --list
 - **Top-level await**: `server/index.js` uses top-level await for `initSqlJs()` — this requires Node 18+.
 - **Stream loop**: the chat endpoint uses a `while (continueLoop)` pattern to handle multiple tool use calls in a single GM response. Each loop iteration is one Anthropic API call.
 - **History reconstruction**: `buildHistory()` in the server reconstructs the full Anthropic-compatible message array from DB rows, including interleaving `tool_use` and `tool_result` content blocks in the right positions.
-- **Archive messages excluded**: `archive`, `state`, and `world_delta` role messages are skipped in `buildHistory()` — they are context for the system prompt or files on disk, not conversation turns.
+- **Archive messages excluded**: `archive` and `state` role messages are skipped in `buildHistory()` — they are context for the system prompt or files on disk, not conversation turns.
 - **Composite campaign IDs**: Campaign IDs use the format `rulesetId.campaignId` (e.g., `ose.lolth-conspiracy`). The `parseCampaignId()` helper splits these for file path construction.
 - **File cascade loading**: The system first checks campaign-specific folders, then falls back to ruleset-level shared folders for modules and references.
-- **Legacy API compatibility**: `/api/campaigns` endpoint maintains backward compatibility by converting the new structure to the old flat format for the frontend.
 - **Two-stage selector**: `CampaignSelector` uses internal state to track ruleset selection, creates composite `ruleset.campaign` IDs for compatibility, and maintains breadcrumb navigation with a back button.
 - **Campaign color theming**: pass `style={{ '--campaign-color': ruleset.color }}` on a container, then use `var(--campaign-color)` in CSS. Colors come from the ruleset, not individual campaigns.
 - **Accent palette**: prefer muted, ink-friendly campaign accents that still contrast on parchment backgrounds; avoid neon or overly saturated hues in `RULESET_DEFAULTS` and CSS vars.

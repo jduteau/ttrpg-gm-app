@@ -1,6 +1,6 @@
 # GM Screen — TTRPG Campaign Manager
 
-A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns with a two-stage selector (rules system → campaign), streaming chat, a built-in dice roller, a rules arbiter, session state management, and world state tracking.
+A self-hosted AI Game Master app for solo tabletop RPG campaigns. Built with Node.js/Express, React, and the Anthropic API. Supports multiple rulesets and campaigns with a two-stage selector (rules system → campaign), streaming chat, a built-in dice roller, a rules arbiter, session state management, and MCP server integration for world information.
 
 The UI uses a parchment palette with shared theme tokens for campaign accents, arbiter highlights, destructive actions, overlays, shadows, and surface washes so the client stays visually consistent across screens and dialogs. Theme retuning should happen in `client/src/index.css` rather than by editing literal colors in individual component styles.
 
@@ -26,6 +26,7 @@ npm install --prefix client
 cp .env.example .env
 # Edit .env and paste your ANTHROPIC_API_KEY
 # Optionally set CONTENT_DIR if you want content stored outside the project
+# Optionally set WORLD_MCP_SERVER_URL to connect to your world MCP server
 ```
 
 ### 4. Run in development mode
@@ -45,31 +46,24 @@ npm start       # serves everything from Express on port 3001
 ## Project structure
 ```
 ttrpg-gm-app/
-├── content/                          # All campaign content and the database
-│   ├── arbiter-prompt.md             # Rules arbiter persona
+├── content/                          # Campaign content and database
+│   ├── arbiter-prompt.md             # Generic rules arbiter persona
 │   ├── session-state-instructions.md # GM instructions for reading/writing state
 │   ├── session-state-template.md     # Fallback state template
-│   ├── world-state-template.md       # World state format reference
+│   ├── world-arbiter-usage.md        # World query usage instructions
 │   ├── data/
 │   │   └── sessions.db               # SQLite database (sql.js)
 │   └── rulesets/
 │       └── {rulesetId}/
 │           ├── system-prompt.md      # Core rules (# header = display name)
-│           ├── rules-arbiter.md      # Optional: enables the rules arbiter tool
 │           ├── session-state-fields.md  # Optional: ruleset-specific state format
-│           ├── modules/              # Shared modules (selectable per session)
-│           ├── references/           # Shared references (selectable per session)
 │           └── campaigns/
 │               └── {campaignId}/
 │                   ├── campaign-prompt.md  # Party, setting, house rules (# header = display name)
-│                   ├── session-state.md    # Current campaign state (auto-updated)
-│                   ├── world-state.md      # Accumulated facts and continuity (auto-updated)
-│                   ├── state-backups/      # Dated session state snapshots
-│                   ├── world-backups/      # Dated world state snapshots
-│                   ├── modules/            # Campaign-specific modules
-│                   └── references/         # Campaign-specific references
+│                   └── session-state.md    # Current campaign state (auto-updated)
 ├── server/
-│   └── index.js                      # Express API, Anthropic streaming, all routes
+│   ├── index.js                      # Express API, Anthropic streaming, all routes
+│   └── world-mcp-client.js           # MCP client for world information
 ├── client/                           # Vite + React frontend
 │   └── src/
 │       ├── App.jsx
@@ -79,6 +73,7 @@ ttrpg-gm-app/
 │           ├── ChatWindow.jsx
 │           └── NewSessionDialog.jsx
 ├── import-sessions.js                # CLI: import recaps and state files
+├── MCP-INTEGRATION-SUMMARY.md        # Documentation for MCP server integration
 ├── .env.example
 └── package.json
 ```
@@ -95,11 +90,14 @@ ttrpg-gm-app/
 
 ### Add a new ruleset
 1. Create `content/rulesets/{rulesetId}/system-prompt.md` (first line: `# Ruleset Name`)
-2. Optionally add `rules-arbiter.md`, `session-state-fields.md`, `modules/`, `references/`
+2. Optionally add `rules-arbiter.md` to enable the rules arbiter tool, `session-state-fields.md` for custom state format
 3. Create at least one campaign under `campaigns/`
 4. Optionally add an icon/color entry to `RULESET_DEFAULTS` in `server/index.js`.
 	Choose a muted accent that stays readable against the parchment UI theme rather than a highly saturated dark-theme color.
 5. Restart the server
+
+### World Information via MCP Server
+World information (locations, NPCs, factions, lore) is now handled by an external MCP (Model Context Protocol) server instead of local files. See `MCP-INTEGRATION-SUMMARY.md` for details on implementing the MCP server interface.
 
 ---
 
@@ -125,7 +123,7 @@ node import-sessions.js --campaign ose.lolth-conspiracy --dir "./my-sessions/"
 node import-sessions.js --list
 ```
 
-Importing with `--state` writes the state to `session-state.md` in the campaign folder, backs up any existing state to `state-backups/session-state-YYYY-MM-DD-HHmm.md`, and marks the session as ended in the database.
+Importing with `--state` writes the state to `session-state.md` in the campaign folder and marks the session as ended in the database.
 
 Tip: use single quotes for paths with spaces — `'~/Documents/My Sessions/session1.md'`
 
@@ -151,19 +149,25 @@ The app maintains two types of persistent state:
 
 ### World State
 - **Purpose**: What exists and what happened (accumulated facts and continuity)
-- **File**: `world-state.md` in each campaign folder
+- **Storage**: MCP (Model Context Protocol) server instead of local files
 - **Contains**: Established locations, NPCs, factions, party reputation, historical events, open plot hooks
-- **When**: Delta generated at the end of each session for review and integration
+- **When**: Delta generated at the end of each session and sent to MCP server
 
 ### End Session Workflow
 When you end a session, the GM will:
-1. Generate a **session state snapshot** (immediate situation)
-2. Generate a **world state delta** (new facts established this session)
+1. Generate a **session state snapshot** (immediate situation) → saved to local file
+2. Generate a **world state delta** (new facts established this session) → sent to MCP server
 3. Create a **session report** (narrative recap for archives)
 
-The world state delta captures everything mentioned during play—NPCs, locations, prices, rumors, party actions—for you to review and integrate into the ongoing world state file. This ensures nothing important gets forgotten between sessions.
+The world state delta captures everything mentioned during play—NPCs, locations, prices, rumors, party actions—and is automatically sent to your MCP server for integration into the campaign's world knowledge. This ensures nothing important gets forgotten between sessions.
 
-### Backup
-Both state files are automatically backed up before overwriting:
-- `state-backups/session-state-YYYY-MM-DD-HHmm.md`
-- `world-backups/world-state-YYYY-MM-DD-HHmm.md`
+### MCP Server Setup
+To use world state functionality, you'll need to set up an MCP server that implements the world information interface. See `MCP-INTEGRATION-SUMMARY.md` for details on:
+- Required MCP server endpoints (`getWorldContext`, `queryWorld`)
+- Data formats and API specifications 
+- Connecting your MCP server via `WORLD_MCP_SERVER_URL` environment variable
+
+### Session State
+
+Session state files are updated at session end:
+- `session-state.md`

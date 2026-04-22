@@ -110,9 +110,6 @@ function Message({ msg }) {
   if (msg.role === 'state') {
     return <StateBlock content={msg.content} isStreaming={false} />;
   }
-  if (msg.role === 'world_delta') {
-    return <WorldDeltaBlock content={msg.content} isStreaming={false} />;
-  }
   if (msg.role === 'arbiter') {
     return <ArbiterBlock question={msg.question} ruling={msg.ruling} />;
   }
@@ -191,8 +188,6 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
   const [diceRollBlocks, setDiceRollBlocks] = useState([]);
   const [ending,         setEnding]         = useState(false);
   const [stateBuffer,    setStateBuffer]    = useState('');
-  const [worldDeltaBuffer, setWorldDeltaBuffer] = useState('');
-  const [worldDeltaStarted, setWorldDeltaStarted] = useState(false);
   const [reportBuffer,   setReportBuffer]   = useState('');
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [sessionEnded,   setSessionEnded]   = useState(false);
@@ -238,14 +233,14 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
       });
     setStreamBuffer(''); setStreaming(false);
     setPendingArbiter(null); setArbiterBlocks([]); setDiceRollBlocks([]);
-    setEnding(false); setStateBuffer(''); setWorldDeltaBuffer(''); setWorldDeltaStarted(false); setReportBuffer('');
+    setEnding(false); setStateBuffer(''); setReportBuffer('');
     setShowEndConfirm(false);
     setSessionTitle(session.title);
   }, [session.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer, worldDeltaBuffer, reportBuffer]);
+  }, [messages, streamBuffer, pendingArbiter, arbiterBlocks, diceRollBlocks, stateBuffer, reportBuffer]);
 
   const send = async () => {
     if (!input.trim() || streaming || ending || sessionEnded) return;
@@ -258,7 +253,7 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
   // ── End session ─────────────────────────────────────────────────────────────
   const handleEndSession = async () => {
     setShowEndConfirm(false);
-    setEnding(true); setStateBuffer(''); setWorldDeltaBuffer(''); setWorldDeltaStarted(false);
+    setEnding(true); setStateBuffer(''); setReportBuffer('');
 
     try {
       const res = await fetch(apiUrl(`/api/sessions/${session.id}/end`), { 
@@ -322,20 +317,6 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
             onSessionTitleChange?.(data.session_title);
           }
 
-          if (data.world_delta_start) {
-            setWorldDeltaStarted(true);
-            setWorldDeltaBuffer('');
-          }
-
-          if (data.world_delta_text) {
-            worldDeltaTextBuffer += data.world_delta_text;
-            setWorldDeltaBuffer(worldDeltaTextBuffer);
-          }
-
-          if (data.world_delta_done) {
-            // World delta is complete, but we keep displaying the buffer until session reload
-          }
-
           if (data.report_text) {
             reportTextBuffer += data.report_text;
             setReportBuffer(reportTextBuffer);
@@ -348,7 +329,7 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
                 headers: getAuthHeaders()
               }).then(r => r.json());
               setMessages(mergeMessages(fresh));
-              setStateBuffer(''); setWorldDeltaBuffer(''); setWorldDeltaStarted(false); setReportBuffer('');
+              setStateBuffer(''); setReportBuffer('');
               setEnding(false);
               setSessionEnded(true);
             } else {
@@ -448,10 +429,7 @@ export default function ChatWindow({ session, campaign, onSessionTitleChange, on
         )}
 
         {ending && (
-          <StateBlock content={stateBuffer || '…'} isStreaming={!worldDeltaStarted} />
-        )}
-        {ending && worldDeltaStarted && (
-          <WorldDeltaBlock content={worldDeltaBuffer || '…'} isStreaming={!reportBuffer} />
+          <StateBlock content={stateBuffer || '…'} isStreaming={!reportBuffer} />
         )}
         {ending && reportBuffer && (
           <div className="message message-archive">

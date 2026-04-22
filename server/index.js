@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { randomInt, createHash, randomBytes } from 'crypto';
 import initSqlJs from 'sql.js';
 import Anthropic from '@anthropic-ai/sdk';
+import { initializeWorldClient, getWorldClient, shutdownWorldClient } from './world-mcp-client.js';
 import 'dotenv/config';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +45,9 @@ const SQL = await initSqlJs();
 const db  = existsSync(DB_PATH)
   ? new SQL.Database(readFileSync(DB_PATH))
   : new SQL.Database();
+
+// Initialize MCP world client
+await initializeWorldClient();
 
 function saveDb() { writeFileSync(DB_PATH, db.export()); }
 function dbRun(sql, params = []) { db.run(sql, params); saveDb(); }
@@ -386,20 +390,12 @@ function hasSessionState(campaignId) {
   return content.length > 0 && !content.startsWith('<!--');
 }
 
-function hasWorldState(campaignId) {
-  const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
-  const p = join(RULESETS_DIR, rulesetId, 'campaigns', campId, 'world-state.md');
-  if (!existsSync(p)) return false;
-  const content = readFileSync(p, 'utf-8').trim();
-  return content.length > 0 && !content.startsWith('<!--');
-}
-
 function loadSharedFile(filename) {
   const p = join(CONTENT_DIR, filename);
   return existsSync(p) ? readFileSync(p, 'utf-8').trim() : null;
 }
 
-function loadSystemPrompt(campaignId, contextFiles = []) {
+async function loadSystemPrompt(campaignId, contextFiles = []) {
   const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
   const campaign = getCampaign(campaignId);
   const ruleset = getRuleset(rulesetId);
@@ -413,7 +409,11 @@ function loadSystemPrompt(campaignId, contextFiles = []) {
   const stateInstructions = loadSharedFile('session-state-instructions.md');
   if (stateInstructions) parts.push(`\n\n---\n${stateInstructions}`);
 
-  // 3. State template: use ruleset-specific if present, otherwise fall back to universal
+  // 3. World query usage instructions (how to use query_world tool)
+  const worldUsage = loadSharedFile('world-arbiter-usage.md');
+  if (worldUsage) parts.push(`\n\n---\n${worldUsage}`);
+
+  // 4. State template: use ruleset-specific if present, otherwise fall back to universal
   const stateFields = readRulesetFile(rulesetId, 'session-state-fields.md');
   if (stateFields) {
     parts.push(`\n\n---\n${stateFields}`);
@@ -422,25 +422,28 @@ function loadSystemPrompt(campaignId, contextFiles = []) {
     if (stateTemplate) parts.push(`\n\n---\n${stateTemplate}`);
   }
 
-  // 4. Campaign-specific prompt (party, setting, campaign rules)
+  // 5. Campaign-specific prompt (party, setting, campaign rules)
   const campaignPrompt = readCampaignFile(campaignId, 'campaign-prompt.md');
   if (campaignPrompt) {
     parts.push(`\n\n---\n# ${campaign?.name ?? campId}\n\n${campaignPrompt}`);
   }
 
-  // 5. World state (accumulated facts, locations, NPCs, events)
-  if (hasWorldState(campaignId)) {
-    const worldState = readCampaignFile(campaignId, 'world-state.md');
-    parts.push(`\n\n---\n# World State\n\nThis is the accumulated world state containing established facts, locations, NPCs, and events from previous sessions. Use this as the foundation for consistency and continuity.\n\n${worldState}`);
+  // 6. World context from MCP server (replaces world-state.md files)
+  const worldClient = getWorldClient();
+  if (worldClient) {
+    const worldContext = await worldClient.getWorldContext(campaignId);
+    if (worldContext) {
+      parts.push(`\n\n---\n# World Context\n\nThis is the accumulated world state from the MCP server containing established facts, locations, NPCs, and events from previous sessions. Use this as the foundation for consistency and continuity.\n\n${worldContext}`);
+    }
   }
 
-  // 6. Restored session state (current campaign state — highest priority)
+  // 7. Restored session state (current campaign state — highest priority)
   if (hasSessionState(campaignId)) {
     const state = readCampaignFile(campaignId, 'session-state.md');
     parts.push(`\n\n---\n# Session State (Restored)\n\nThis is the current campaign state from the end of the last session. Treat it as authoritative.\n\n${state}`);
   }
 
-  // 7. Selected modules and references
+  // 8. Selected modules and references
   for (const filePath of contextFiles) {
     const content = readCampaignFile(campaignId, filePath);
     if (content) parts.push(`\n\n---\n# ${labelFromFilename(filePath)}\n\n${content}`);
@@ -450,25 +453,24 @@ function loadSystemPrompt(campaignId, contextFiles = []) {
 }
 
 function loadArbiterPrompt(campaignId) {
-  const sharedPath = join(__dirname, 'arbiter-prompt.md');
-  const shared   = existsSync(sharedPath) ? readFileSync(sharedPath, 'utf-8').trim() : '';
-  const specific = readCampaignFile(campaignId, 'rules-arbiter.md') ?? '';
-  return [shared, specific].filter(Boolean).join('\n\n---\n\n');
+  const { rulesetId } = parseCampaignId(campaignId);
+  const arbiterPrompt = loadSharedFile('arbiter-prompt.md');
+  const rulesetRules = readRulesetFile(rulesetId, 'rules-arbiter.md');
+  
+  const parts = [];
+  if (arbiterPrompt) parts.push(arbiterPrompt);
+  if (rulesetRules) parts.push(rulesetRules);
+  
+  return parts.length > 0 
+    ? parts.join('\n\n---\n\n')
+    : 'You are a rules arbiter. Answer questions about game rules clearly and concisely.';
 }
 
 function saveSessionState(campaignId, stateContent) {
   const { rulesetId, campaignId: campId } = parseCampaignId(campaignId);
   const campaignPath = join(RULESETS_DIR, rulesetId, 'campaigns', campId);
   const statePath    = join(campaignPath, 'session-state.md');
-  const backupDir    = join(campaignPath, 'state-backups');
-  mkdirSync(backupDir, { recursive: true });
-
-  // Archive current state before overwriting
-  if (existsSync(statePath)) {
-    const ts = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
-    const backupPath = join(backupDir, `session-state-${ts}.md`);
-    copyFileSync(statePath, backupPath);
-  }
+  mkdirSync(campaignPath, { recursive: true });
 
   writeFileSync(statePath, stateContent, 'utf-8');
 }
@@ -520,6 +522,21 @@ const ROLL_DICE_TOOL = {
       },
     },
     required: ['expressions'],
+  },
+};
+
+const QUERY_WORLD_TOOL = {
+  name: 'query_world',
+  description: 'Query the campaign world knowledge through the MCP server. Use this to get information about locations, NPCs, factions, party reputation, lore, or any established facts from previous sessions. Essential for maintaining continuity and consistency.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Specific question about the world. Be contextual and specific, e.g. "What does the party know about the Temple of Elemental Evil?" or "NPCs in Hommlet who might help with information".',
+      },
+    },
+    required: ['query'],
   },
 };
 
@@ -592,7 +609,7 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
       model:      'claude-sonnet-4-6',
       max_tokens: 2048,
       system:     systemPrompt,
-      tools:      hasArbiter ? [QUERY_RULES_TOOL, ROLL_DICE_TOOL] : [ROLL_DICE_TOOL],
+      tools:      hasArbiter ? [QUERY_RULES_TOOL, QUERY_WORLD_TOOL, ROLL_DICE_TOOL] : [QUERY_WORLD_TOOL, ROLL_DICE_TOOL],
       messages:   history,
     });
 
@@ -647,6 +664,31 @@ async function runChatStream(res, { systemPrompt, history, hasArbiter, campaignI
         ]});
         history.push({ role: 'user', content: [
           { type: 'tool_result', tool_use_id: toolUseId, content: resultText },
+        ]});
+
+      } else if (toolName === 'query_world') {
+        // query_world (MCP server)
+        const query = toolInput.query ?? '';
+        const worldClient = getWorldClient();
+        
+        let result = 'World information is currently unavailable.';
+        if (worldClient) {
+          result = await worldClient.queryWorld(campaignId, query);
+        }
+
+        if (saveAssistantMessages) {
+          dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+            [sessionId, 'tool_use', JSON.stringify({ tool_use_id: toolUseId, tool_name: 'query_world', query }), new Date().toISOString()]);
+          dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
+            [sessionId, 'tool_result', JSON.stringify({ tool_use_id: toolUseId, result }), new Date().toISOString()]);
+        }
+
+        history.push({ role: 'assistant', content: [
+          ...(fullText ? [{ type: 'text', text: fullText }] : []),
+          { type: 'tool_use', id: toolUseId, name: 'query_world', input: { query } },
+        ]});
+        history.push({ role: 'user', content: [
+          { type: 'tool_result', tool_use_id: toolUseId, content: result },
         ]});
 
       } else {
@@ -765,24 +807,6 @@ app.get('/api/rulesets', requireAuth, (req, res) => {
   res.json(result);
 });
 
-// Legacy route: return campaigns in old format for backwards compatibility
-app.get('/api/campaigns', (req, res) => {
-  const campaigns = getCampaigns();
-  const rulesets = getRulesets();
-  
-  const legacyFormat = Object.values(campaigns).map(campaign => {
-    const ruleset = rulesets[campaign.rulesetId];
-    return {
-      id: buildCampaignId(campaign.rulesetId, campaign.id),
-      name: campaign.name,
-      subtitle: campaign.description,
-      icon: ruleset?.icon || '📖',
-      color: ruleset?.color || '#666666'
-    };
-  });
-  res.json(legacyFormat);
-});
-
 app.get('/api/campaigns/:campaignId/files', requireAuth, (req, res) => {
   const { campaignId } = req.params;
   if (!getCampaign(campaignId)) return res.status(404).json({ error: 'Campaign not found' });
@@ -842,26 +866,15 @@ app.delete('/api/sessions/:sessionId', requireAuth, (req, res) => {
 
   let stateRestored = false;
 
-  // If the session was ended, roll the state file back to the most recent backup
+  // If the session was ended, reset the state file
   if (session.ended_at) {
     const { rulesetId, campaignId: campId } = parseCampaignId(session.campaign_id);
     const campaignPath = join(RULESETS_DIR, rulesetId, 'campaigns', campId);
     const statePath    = join(campaignPath, 'session-state.md');
-    const backupDir    = join(campaignPath, 'state-backups');
 
-    if (existsSync(backupDir)) {
-      const backups = readdirSync(backupDir)
-        .filter(f => f.startsWith('session-state-') && f.endsWith('.md'))
-        .sort(); // alphabetical sort = chronological order given the timestamp format
-
-      if (backups.length > 0) {
-        copyFileSync(join(backupDir, backups[backups.length - 1]), statePath);
-        stateRestored = true;
-      } else if (existsSync(statePath)) {
-        writeFileSync(statePath, '<!-- No prior state -->\n', 'utf-8');
-      }
-    } else if (existsSync(statePath)) {
+    if (existsSync(statePath)) {
       writeFileSync(statePath, '<!-- No prior state -->\n', 'utf-8');
+      stateRestored = true;
     }
   }
 
@@ -893,7 +906,7 @@ app.post('/api/sessions/:sessionId/chat', requireAuth, async (req, res) => {
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
   const contextFiles = JSON.parse(session.context_files || '[]');
-  const systemPrompt = loadSystemPrompt(session.campaign_id, contextFiles);
+  const systemPrompt = await loadSystemPrompt(session.campaign_id, contextFiles);
   const { rulesetId } = parseCampaignId(session.campaign_id);
   const hasArbiter   = existsSync(join(RULESETS_DIR, rulesetId, 'rules-arbiter.md'));
 
@@ -929,7 +942,7 @@ app.post('/api/sessions/:sessionId/end', requireAuth, async (req, res) => {
   if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
   const contextFiles = JSON.parse(session.context_files || '[]');
-  const systemPrompt = loadSystemPrompt(session.campaign_id, contextFiles);
+  const systemPrompt = await loadSystemPrompt(session.campaign_id, contextFiles);
   const { rulesetId } = parseCampaignId(session.campaign_id);
   const hasArbiter   = existsSync(join(RULESETS_DIR, rulesetId, 'rules-arbiter.md'));
 
@@ -946,12 +959,12 @@ app.post('/api/sessions/:sessionId/end', requireAuth, async (req, res) => {
   function send(data) { res.write(`data: ${JSON.stringify(data)}\n\n`); }
 
   try {
-    // ── Phase 1: State snapshot ──────────────────────────────────────────────
+    // ── Combined State & World Delta Generation ──────────────────────────────
     send({ state_start: true });
 
     const stateHistory = [...baseHistory, {
       role: 'user',
-      content: 'The session is now ending. Please produce the full session state snapshot as instructed in your system prompt. Output only the state block — no other commentary.',
+      content: 'The session is now ending. Please produce the complete session state snapshot as instructed in your system prompt. This should include both the session state AND the world state delta (new facts, changes, and discoveries from this session). Output only the combined state block — no other commentary.',
     }];
 
     const stateContent = await runChatStream(res, {
@@ -981,39 +994,6 @@ app.post('/api/sessions/:sessionId/end', requireAuth, async (req, res) => {
     }
 
     send({ state_done: true, content: stateContent });
-
-    // ── Phase 2: World state delta ───────────────────────────────────────────
-    send({ world_delta_start: true });
-
-    const worldDeltaHistory = [...baseHistory, {
-      role: 'user',
-      content: 'Please generate a World State Delta as instructed in your system prompt. Output only the world state delta — no other commentary.',
-    }];
-
-    let worldDeltaContent = '';
-    try {
-      const worldDeltaStream = anthropic.messages.stream({
-        model:      'claude-sonnet-4-6',
-        max_tokens: 2048,
-        system:     systemPrompt,
-        messages:   worldDeltaHistory,
-      });
-      for await (const event of worldDeltaStream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          worldDeltaContent += event.delta.text;
-          send({ world_delta_text: event.delta.text });
-        }
-      }
-    } catch (worldDeltaErr) {
-      console.error('World state delta generation error:', worldDeltaErr);
-    }
-
-    if (worldDeltaContent) {
-      dbInsert('INSERT INTO messages (session_id, role, content, created_at) VALUES (?, ?, ?, ?)',
-        [sessionId, 'world_delta', worldDeltaContent, new Date().toISOString()]);
-    }
-
-    send({ world_delta_done: true, content: worldDeltaContent });
 
     // ── Phase 3: Session report ──────────────────────────────────────────────
     send({ report_start: true });
@@ -1046,7 +1026,7 @@ app.post('/api/sessions/:sessionId/end', requireAuth, async (req, res) => {
         [sessionId, 'archive', reportContent, new Date().toISOString()]);
     }
 
-    // Trim after both state and report are saved (trim keeps archive + state)
+    // Trim after state and report are saved (trim keeps archive + state)
     trimEndedSessionMessages(sessionId);
 
     send({ report_done: true, content: reportContent });
@@ -1100,4 +1080,17 @@ if (isProd) {
 
 app.listen(PORT, () => {
   console.log(`🎲 TTRPG GM Server running on http://localhost:${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down gracefully...');
+  await shutdownWorldClient();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Shutting down gracefully...');
+  await shutdownWorldClient();
+  process.exit(0);
 });

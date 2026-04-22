@@ -171,15 +171,7 @@ function saveSessionStateFile(campaignId, stateContent) {
   const [rulesetId, campId] = campaignId.split('.');
   const campaignPath = join(__dirname, 'server', 'rulesets', rulesetId, 'campaigns', campId);
   const statePath    = join(campaignPath, 'session-state.md');
-  const backupDir    = join(campaignPath, 'state-backups');
-  mkdirSync(backupDir, { recursive: true });
-
-  if (existsSync(statePath)) {
-    const ts = new Date().toISOString().replace('T', '-').slice(0, 16).replace(':', '');
-    const backupPath = join(backupDir, `session-state-${ts}.md`);
-    copyFileSync(statePath, backupPath);
-    console.log(`  → Backed up existing state to state-backups/session-state-${ts}.md`);
-  }
+  mkdirSync(campaignPath, { recursive: true });
 
   writeFileSync(statePath, stateContent, 'utf-8');
   console.log(`  → Wrote session-state.md`);

@@ -10,9 +10,17 @@ The player controls four main party members: a Paladin, Ranger, Magic-User, and 
 
 ---
 
-## Campaign-Specific Module Information
+## World Knowledge Access
 
-### MODULE FIDELITY TIERS FOR THIS CAMPAIGN
+All established campaign world knowledge — locations, NPCs, factions, lore, conspiracy threads, and past session events — is maintained in the campaign wiki. Use the `query_world` tool to access this information as needed during play.
+
+**At session start**, the provided session state will indicate the party's current location and immediate situation. Query the wiki for additional location details, NPC information, or relevant context beyond what's in the session state.
+
+**During play**, query the wiki whenever you need to recall established facts, NPC backgrounds, faction details, or past events. The wiki is authoritative — do not contradict information returned by queries.
+
+---
+
+## Module Fidelity Tiers
 
 **TIER 1 — FOLLOW FAITHFULLY**: These locations contain load-bearing conspiracy content that must happen as designed:
 
@@ -37,14 +45,15 @@ The player controls four main party members: a Paladin, Ranger, Magic-User, and 
 - Wilderness travel sections
 - Keep on the Borderlands social content
 
-### MODULE FILES AVAILABLE
+**All module content is available via the query_world tool.** Query for specific locations, encounters, or NPCs as needed during play.
 
-- **B2 Keep on the Borderlands** (b2-keep-on-the-borderlands.md) — Format: Markdown, navigate by room number headers
-- **T1 Village of Hommlet** (t1-hommlet.md) — Format: Plain text, navigate by location name and/or number
+---
 
-### CONSPIRACY REVELATION RULES
+## Conspiracy Revelation Rules
 
 **STRICT INHIBITION — CONSPIRACY NAMES**: No NPC may speak the words "Lolth" or "drow" until the specific module milestones are reached. Before those milestones: NPCs who sense something larger behind local events speak only in terms of local superstition, "the Shepherd" mythos, "something from below," or vague dread. This applies even if the player asks directly.
+
+**Milestone tracking**: Query the wiki for `conspiracy_level` information when relevant. Respect any milestone restrictions returned in query results.
 
 ---
 
@@ -94,11 +103,11 @@ The player controls four main party members: a Paladin, Ranger, Magic-User, and 
 - INT 18: +3 additional languages, maximum spells per level, 85% chance to learn any spell
 - CON 14: +1 HP per level
 
-**Spellbook**: Read Magic (permanent, house rule starting spell) and Sleep. Current memorized spell in state block.
+**Starting Spells**: Read Magic (permanent, house rule starting spell) and Sleep. Current spellbook and memorized spells tracked in session state.
 
 **GM Notes**: Michael's Neutral Good alignment means he genuinely wants to do right but isn't bound by law — he'll lie to a corrupt official without a second thought. His INT 18 defines his long-term arc — maximum spells per level and near-certain spell learning. At level 1 he is extremely fragile.
 
-**Spell Progression**: Track Michael's spellbook carefully. Each new spell level unlocked is a campaign milestone.
+**Spell Progression**: Track Michael's spellbook carefully in session state. Each new spell level unlocked is a campaign milestone.
 
 **Voice**: Slightly formal register that relaxes when something genuinely interests him. Has the academic's habit of thinking out loud. Genuinely curious about people as well as ideas. When working through a problem he gets quieter and more precise.
 
@@ -151,7 +160,9 @@ Brother Aldric is a Cleric of St. Cuthbert, middle-aged, of modest ambition and 
 **If Aldric Dies**: This is a significant loss. Do not immediately introduce a replacement. Let the surviving party deal with the weight.
 
 ---
-## CAMPAIGN FEAT EXAMPLES
+
+## Campaign Feat Examples
+
 ### MINOR FEATS — 2% of Party TXP
 
 | Feat | Campaign Examples |
